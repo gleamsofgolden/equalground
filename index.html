@@ -1827,9 +1827,542 @@ footer {
 /* Submission success */
 .submit-success { text-align: center; padding: 60px 40px; display: none; }
 .submit-success.show { display: block; animation: fadeIn 0.4s ease; }
+
+/* Dynamic table elements */
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.status-live { background: rgba(80,180,120,0.12); color: #3a9e6a; }
+.status-draft { background: rgba(107,79,138,0.1); color: var(--violet); }
+
+.badge-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--lilac);
+  color: var(--deep-violet);
+}
+
+/* Auth error messages */
+.auth-error {
+  background: rgba(201,100,100,0.15);
+  border: 1px solid rgba(201,100,100,0.3);
+  color: #c96464;
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: none;
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+}
+.auth-error.show { display: block; }
+.auth-loading { opacity: 0.6; pointer-events: none; }
+
+/* User nav state */
+.nav-user-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-mid);
+  cursor: pointer;
+  padding: 7px 16px;
+  border: 1px solid rgba(107,79,138,0.2);
+  border-radius: 40px;
+  transition: all 0.2s;
+}
+.nav-user-pill:hover { border-color: var(--violet); color: var(--violet); }
+.nav-user-dot {
+  width: 8px; height: 8px;
+  background: var(--violet);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Admin login gate */
+.admin-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--midnight), var(--deep-violet));
+}
+.admin-gate-card {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 24px;
+  padding: 48px 40px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  backdrop-filter: blur(20px);
+}
+.admin-gate-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 26px;
+  color: white;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+.admin-gate-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  color: rgba(255,255,255,0.5);
+  font-style: italic;
+  margin-bottom: 32px;
+}
 </style>
 </head>
 <body>
+
+<!-- ═══════════════════════════════════════════ FIREBASE ═══ -->
+<script type="module">
+// ══════════════════════════════════════════════════════════
+//  FIREBASE CONFIGURATION
+//  Replace the values below with your own Firebase project
+//  settings from: console.firebase.google.com → Project Settings
+// ══════════════════════════════════════════════════════════
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  updateProfile
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  collection,
+  addDoc,
+  getDocs,
+  query,
+  orderBy,
+  where,
+  serverTimestamp,
+  updateDoc,
+  deleteDoc,
+  onSnapshot
+} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+// ── YOUR FIREBASE CONFIG ── paste from Firebase Console ──
+const firebaseConfig = {
+  apiKey: "PASTE_YOUR_API_KEY_HERE",
+  authDomain: "PASTE_YOUR_AUTH_DOMAIN_HERE",
+  projectId: "PASTE_YOUR_PROJECT_ID_HERE",
+  storageBucket: "PASTE_YOUR_STORAGE_BUCKET_HERE",
+  messagingSenderId: "PASTE_YOUR_MESSAGING_SENDER_ID_HERE",
+  appId: "PASTE_YOUR_APP_ID_HERE"
+};
+
+// ── Designated admin emails (add board members here) ──
+const ADMIN_EMAILS = [
+  'shatavisha@equalground.vercel.app',
+  'roopkatha@equalground.vercel.app',
+];
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ── Current user state ──
+let currentUser = null;
+let currentUserData = null;
+let isAdmin = false;
+
+// ══════════════════════════════════════════════════════════
+//  AUTH STATE LISTENER — runs on every page load
+// ══════════════════════════════════════════════════════════
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    isAdmin = ADMIN_EMAILS.includes(user.email);
+
+    // fetch Firestore profile
+    try {
+      const snap = await getDoc(doc(db, 'users', user.uid));
+      currentUserData = snap.exists() ? snap.data() : null;
+    } catch(e) { currentUserData = null; }
+
+    _updateNavForUser(user);
+    _fillProfilePage(user);
+
+    // If we're on the admin page, skip gate and mount
+    const path = window.location.pathname.replace(/\/$/, '');
+    if (path === '/admin') {
+      _mountAdmin();
+    }
+  } else {
+    currentUser = null;
+    currentUserData = null;
+    isAdmin = false;
+    _updateNavForGuest();
+  }
+});
+
+// ── Update navigation for signed-in user ──
+function _updateNavForUser(user) {
+  const actions = document.querySelector('.nav-actions');
+  if (!actions) return;
+  const displayName = currentUserData?.displayName || user.displayName || user.email.split('@')[0];
+  actions.innerHTML = `
+    <div class="nav-user-pill" onclick="navigate('profile')">
+      <div class="nav-user-dot"></div>
+      ${displayName}
+    </div>
+    <button class="btn btn-ghost" onclick="window._fbSignOut()">Sign Out</button>
+  `;
+}
+
+function _updateNavForGuest() {
+  const actions = document.querySelector('.nav-actions');
+  if (!actions) return;
+  actions.innerHTML = `
+    <button class="btn btn-ghost" onclick="navigate('login')">Sign In</button>
+    <button class="btn btn-primary" onclick="navigate('signup')">Join Us</button>
+  `;
+}
+
+function _fillProfilePage(user) {
+  const nameEl = document.getElementById('profileName');
+  const userEl = document.getElementById('profileUsername');
+  const bioEl = document.getElementById('profileBioText');
+  const d = currentUserData;
+  if (nameEl) nameEl.textContent = d?.displayName || user.displayName || 'Your Name';
+  if (userEl) userEl.textContent = d?.username ? '@' + d.username : '@' + user.email.split('@')[0];
+  if (bioEl) bioEl.textContent = d?.bio || 'Add a bio in settings to tell the community who you are.';
+  const settingsName = document.getElementById('settingsName');
+  const settingsUser = document.getElementById('settingsUsername');
+  const settingsBio = document.getElementById('settingsBio');
+  if (settingsName) settingsName.value = d?.displayName || user.displayName || '';
+  if (settingsUser) settingsUser.value = d?.username || '';
+  if (settingsBio) settingsBio.value = d?.bio || '';
+}
+
+// ══════════════════════════════════════════════════════════
+//  SIGN UP
+// ══════════════════════════════════════════════════════════
+window._fbSignUp = async function() {
+  const nameInput = document.getElementById('signupName');
+  const usernameInput = document.getElementById('signupUsername');
+  const emailInput = document.getElementById('signupEmail');
+  const passInput = document.getElementById('signupPassword');
+  const bioInput = document.getElementById('signupBio');
+  const errEl = document.getElementById('signupError');
+  const btn = document.getElementById('signupBtn');
+
+  const name = nameInput?.value.trim();
+  const username = usernameInput?.value.trim().replace('@','');
+  const email = emailInput?.value.trim();
+  const password = passInput?.value;
+  const bio = bioInput?.value.trim();
+
+  errEl.classList.remove('show');
+
+  if (!name) { errEl.textContent = 'Please enter your full name.'; errEl.classList.add('show'); return; }
+  if (!email) { errEl.textContent = 'Please enter your email.'; errEl.classList.add('show'); return; }
+  if (!password || password.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.classList.add('show'); return; }
+
+  btn.textContent = 'Creating account…';
+  btn.classList.add('auth-loading');
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    await updateProfile(cred.user, { displayName: name });
+
+    // Save extra profile data to Firestore
+    await setDoc(doc(db, 'users', cred.user.uid), {
+      displayName: name,
+      username: username || email.split('@')[0],
+      email: email,
+      bio: bio || '',
+      role: 'member',
+      createdAt: serverTimestamp()
+    });
+
+    showToast('Welcome to Equal Ground ✦');
+    navigate('home');
+  } catch(err) {
+    const msgs = {
+      'auth/email-already-in-use': 'This email is already registered. Try signing in.',
+      'auth/invalid-email': 'Please enter a valid email address.',
+      'auth/weak-password': 'Password must be at least 6 characters.',
+      'auth/network-request-failed': 'Network error. Check your connection.',
+    };
+    errEl.textContent = msgs[err.code] || 'Sign up failed: ' + err.message;
+    errEl.classList.add('show');
+  } finally {
+    btn.textContent = 'Create Account';
+    btn.classList.remove('auth-loading');
+  }
+};
+
+// ══════════════════════════════════════════════════════════
+//  SIGN IN
+// ══════════════════════════════════════════════════════════
+window._fbSignIn = async function() {
+  const emailInput = document.getElementById('loginEmail');
+  const passInput = document.getElementById('loginPassword');
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+
+  const email = emailInput?.value.trim();
+  const password = passInput?.value;
+
+  errEl.classList.remove('show');
+
+  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; errEl.classList.add('show'); return; }
+
+  btn.textContent = 'Signing in…';
+  btn.classList.add('auth-loading');
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    showToast('Welcome back ✦');
+    navigate('home');
+  } catch(err) {
+    const msgs = {
+      'auth/user-not-found': 'No account found with this email.',
+      'auth/wrong-password': 'Incorrect password.',
+      'auth/invalid-credential': 'Email or password is incorrect.',
+      'auth/invalid-email': 'Please enter a valid email address.',
+      'auth/too-many-requests': 'Too many attempts. Try again in a few minutes.',
+      'auth/network-request-failed': 'Network error. Check your connection.',
+    };
+    errEl.textContent = msgs[err.code] || 'Sign in failed: ' + err.message;
+    errEl.classList.add('show');
+  } finally {
+    btn.textContent = 'Sign In';
+    btn.classList.remove('auth-loading');
+  }
+};
+
+// ── Sign out ──
+window._fbSignOut = async function() {
+  try {
+    await signOut(auth);
+    showToast('Signed out. See you soon ✦');
+    navigate('home');
+  } catch(e) { showToast('Error signing out.'); }
+};
+
+// ══════════════════════════════════════════════════════════
+//  ADMIN: ARTICLE MANAGEMENT
+// ══════════════════════════════════════════════════════════
+
+// Publish article from admin panel
+window._fbPublishArticle = async function(status = 'published') {
+  if (!currentUser || !isAdmin) { showToast('Admins only.'); return; }
+
+  const title = document.getElementById('adminArticleTitle')?.value.trim();
+  const subtitle = document.getElementById('adminArticleSubtitle')?.value.trim();
+  const body = document.getElementById('editorArea')?.innerHTML.trim();
+  const category = document.getElementById('adminCategory')?.value;
+  const btn = document.getElementById('publishBtn');
+
+  if (!title) { showToast('Please add a title.'); return; }
+  if (!category || category === 'Select category…') { showToast('Please select a category.'); return; }
+
+  btn.textContent = status === 'published' ? 'Publishing…' : 'Saving…';
+  btn.classList.add('auth-loading');
+
+  try {
+    await addDoc(collection(db, 'articles'), {
+      title,
+      subtitle: subtitle || '',
+      body: body || '',
+      category,
+      status,
+      authorId: currentUser.uid,
+      authorName: currentUserData?.displayName || currentUser.displayName || currentUser.email,
+      createdAt: serverTimestamp(),
+      views: 0,
+    });
+    showToast(status === 'published' ? 'Article published ✦' : 'Saved as draft');
+    document.getElementById('adminArticleTitle').value = '';
+    document.getElementById('adminArticleSubtitle').value = '';
+    document.getElementById('editorArea').innerHTML = '';
+    _loadAdminArticles();
+    _loadAdminStats();
+  } catch(e) {
+    showToast('Error saving: ' + e.message);
+  } finally {
+    btn.textContent = 'Publish';
+    btn.classList.remove('auth-loading');
+  }
+};
+
+// Load articles into admin table
+window._loadAdminArticles = async function() {
+  const tbody = document.getElementById('adminArticlesBody');
+  const allTbody = document.getElementById('allArticlesBody');
+  const draftsTbody = document.getElementById('draftsBody');
+  if (!tbody && !allTbody) return;
+
+  try {
+    const q = query(collection(db, 'articles'), orderBy('createdAt', 'desc'));
+    const snap = await getDocs(q);
+    const articles = [];
+    snap.forEach(d => articles.push({ id: d.id, ...d.data() }));
+
+    const renderRow = (a) => {
+      const date = a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—';
+      return `<tr>
+        <td style="font-weight:600;color:var(--deep-violet);">${a.title}</td>
+        <td>${a.authorName || '—'}</td>
+        <td><span class="badge-chip">${a.category || '—'}</span></td>
+        <td><span class="status-pill ${a.status === 'published' ? 'status-live' : 'status-draft'}">${a.status}</span></td>
+        <td>${date}</td>
+        <td><button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;color:#c96464;" onclick="window._fbDeleteArticle('${a.id}')">Delete</button></td>
+      </tr>`;
+    };
+
+    const published = articles.filter(a => a.status === 'published');
+    const drafts = articles.filter(a => a.status === 'draft');
+
+    if (tbody) {
+      tbody.innerHTML = published.length
+        ? published.slice(0,5).map(renderRow).join('')
+        : `<tr><td colspan="6" style="text-align:center;padding:52px 24px;"><div style="font-size:32px;opacity:0.25;margin-bottom:12px;">◎</div><p style="font-family:'Playfair Display',serif;font-size:17px;color:var(--text-mid);">No articles yet</p></td></tr>`;
+    }
+    if (allTbody) {
+      allTbody.innerHTML = articles.length
+        ? articles.map(renderRow).join('')
+        : `<tr><td colspan="7" style="text-align:center;padding:52px 24px;"><div style="opacity:0.25;font-size:32px;margin-bottom:12px;">◎</div><p style="font-family:'Playfair Display',serif;font-size:17px;color:var(--text-mid);">No articles published</p></td></tr>`;
+    }
+    if (draftsTbody) {
+      draftsTbody.innerHTML = drafts.length
+        ? drafts.map(a => `<tr>
+            <td style="font-weight:600;color:var(--deep-violet);">${a.title}</td>
+            <td>${a.authorName || '—'}</td>
+            <td>${a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString() : '—'}</td>
+            <td><button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;color:#c96464;" onclick="window._fbDeleteArticle('${a.id}')">Delete</button></td>
+          </tr>`).join('')
+        : `<tr><td colspan="4" style="text-align:center;padding:52px 24px;"><div style="opacity:0.25;font-size:32px;margin-bottom:12px;">◻</div><p style="font-family:'Playfair Display',serif;font-size:17px;color:var(--text-mid);">No drafts saved</p></td></tr>`;
+    }
+  } catch(e) { console.error('Error loading articles:', e); }
+};
+
+// Delete article
+window._fbDeleteArticle = async function(id) {
+  if (!confirm('Delete this article? This cannot be undone.')) return;
+  try {
+    await deleteDoc(doc(db, 'articles', id));
+    showToast('Article deleted.');
+    _loadAdminArticles();
+    _loadAdminStats();
+  } catch(e) { showToast('Delete failed: ' + e.message); }
+};
+
+// Load stats
+window._loadAdminStats = async function() {
+  try {
+    const snap = await getDocs(collection(db, 'articles'));
+    let total = 0, drafts = 0;
+    snap.forEach(d => { total++; if (d.data().status === 'draft') drafts++; });
+    const totalEl = document.getElementById('statTotalArticles');
+    const draftEl = document.getElementById('statDrafts');
+    if (totalEl) totalEl.textContent = total - drafts;
+    if (draftEl) draftEl.textContent = drafts;
+  } catch(e) {}
+};
+
+// Load users list
+window._loadAdminUsers = async function() {
+  const container = document.getElementById('adminUsersContainer');
+  if (!container) return;
+  try {
+    const snap = await getDocs(collection(db, 'users'));
+    const users = [];
+    snap.forEach(d => users.push({ id: d.id, ...d.data() }));
+    container.innerHTML = users.length ? users.map(u => `
+      <div style="display:flex;align-items:center;gap:16px;padding:20px;background:white;border-radius:16px;border:1px solid var(--card-border);margin-bottom:12px;">
+        <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--rose));display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-family:'Playfair Display',serif;font-size:18px;flex-shrink:0;">${(u.displayName||'?')[0]}</div>
+        <div style="flex:1;">
+          <div style="font-family:'Playfair Display',serif;font-weight:700;color:var(--deep-violet);font-size:16px;">✦ ${u.displayName || 'Unknown'}</div>
+          <div style="font-size:12px;color:var(--text-light);margin-top:2px;">${u.email}</div>
+          ${u.bio ? `<div style="font-size:13px;color:var(--text-mid);font-family:'Cormorant Garamond',serif;font-style:italic;margin-top:4px;">${u.bio}</div>` : ''}
+        </div>
+        <span style="font-size:11px;font-weight:700;letter-spacing:0.5px;padding:4px 10px;border-radius:20px;background:rgba(107,79,138,0.1);color:var(--violet);">${u.role || 'member'}</span>
+      </div>
+    `).join('') : '<p style="color:var(--text-light);text-align:center;padding:40px;">No registered users yet.</p>';
+  } catch(e) { container.innerHTML = '<p style="color:var(--text-light);padding:40px;text-align:center;">Could not load users.</p>'; }
+};
+
+// Load public articles feed on articles page
+window._loadPublicArticles = async function() {
+  const container = document.getElementById('publicArticlesFeed');
+  if (!container) return;
+  try {
+    const q = query(collection(db, 'articles'), where('status','==','published'), orderBy('createdAt','desc'));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      container.innerHTML = `<div style="padding:80px 40px;border-radius:20px;border:1.5px dashed rgba(107,79,138,0.18);background:linear-gradient(135deg,rgba(232,218,240,0.3),rgba(245,224,232,0.2));text-align:center;"><div style="font-size:36px;margin-bottom:16px;opacity:0.3;">◎</div><p style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--deep-violet);margin-bottom:10px;">The archive is empty for now</p><p style="font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--text-light);">Equal Ground launched in 2026. Our writers are at work. The first articles will appear here soon.</p><button class="btn btn-primary" style="margin-top:24px;" onclick="navigate('signup')">Join to be notified →</button></div>`;
+      return;
+    }
+    const cats = ['Gender','Politics','Society','Culture','Voices'];
+    const cards = [];
+    snap.forEach(d => {
+      const a = { id: d.id, ...d.data() };
+      const date = a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
+      cards.push(`<div class="article-card" style="background:white;border-radius:20px;border:1px solid var(--card-border);padding:32px;cursor:pointer;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--violet);margin-bottom:14px;">${a.category || 'General'}</div>
+        <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--deep-violet);margin-bottom:10px;line-height:1.3;">${a.title}</h2>
+        ${a.subtitle ? `<p style="font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--text-mid);margin-bottom:18px;line-height:1.6;">${a.subtitle}</p>` : ''}
+        <div style="display:flex;align-items:center;gap:10px;margin-top:18px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--rose));display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:700;">${(a.authorName||'?')[0]}</div>
+          <span style="font-size:13px;font-weight:600;color:var(--text-dark);">${a.authorName || 'Equal Ground'}</span>
+          <span style="font-size:12px;color:var(--text-light);">· ${date}</span>
+        </div>
+      </div>`);
+    });
+    container.innerHTML = `<div style="display:grid;gap:20px;">${cards.join('')}</div>`;
+  } catch(e) { console.error('Error loading articles:', e); }
+};
+
+// Save profile from settings tab
+window._fbSaveProfile = async function() {
+  if (!currentUser) { showToast('Sign in to save your profile.'); return; }
+  const name = document.getElementById('settingsName')?.value.trim();
+  const username = document.getElementById('settingsUsername')?.value.trim().replace('@','');
+  const bio = document.getElementById('settingsBio')?.value.trim();
+  try {
+    await updateDoc(doc(db, 'users', currentUser.uid), { displayName: name, username, bio });
+    await updateProfile(currentUser, { displayName: name });
+    currentUserData = { ...currentUserData, displayName: name, username, bio };
+    _fillProfilePage(currentUser);
+    _updateNavForUser(currentUser);
+    showToast('Profile saved ✦');
+  } catch(e) { showToast('Error saving: ' + e.message); }
+};
+
+// ══════════════════════════════════════════════════════════
+//  EXPOSE TO GLOBAL (non-module) scope
+// ══════════════════════════════════════════════════════════
+window._getCurrentUser = () => currentUser;
+window._getIsAdmin = () => isAdmin;
+
+// After DOM ready, hook up admin data loads
+document.addEventListener('DOMContentLoaded', () => {
+  // Override the save profile button
+  const saveBtn = document.querySelector('#ptab-settings .btn-primary');
+  if (saveBtn) saveBtn.setAttribute('onclick', 'window._fbSaveProfile()');
+});
+</script>
 
 <!-- ═══════════════════════════════════════════ NAVIGATION ═══ -->
 <nav id="mainNav">
@@ -1969,7 +2502,7 @@ footer {
     </div>
 
     <div class="container">
-      <div class="articles-full-grid" style="display:block;">
+      <div class="articles-full-grid" style="display:block;" id="publicArticlesFeed">
         <div style="padding:100px 40px;border-radius:24px;border:1.5px dashed rgba(107,79,138,0.18);background:linear-gradient(135deg,rgba(232,218,240,0.3),rgba(245,224,232,0.2));text-align:center;margin:20px 0 60px;">
           <div style="font-size:48px;margin-bottom:24px;opacity:0.35;">◎</div>
           <p style="font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:var(--deep-violet);margin-bottom:14px;">The archive is empty for now</p>
@@ -2164,16 +2697,18 @@ footer {
       <h2 class="auth-title">Welcome back</h2>
       <p class="auth-sub">Sign in to continue the conversation</p>
 
+      <div class="auth-error" id="loginError"></div>
+
       <div class="auth-form-group">
         <label class="auth-label">Email</label>
-        <input class="auth-input" type="email" placeholder="your@email.com">
+        <input class="auth-input" id="loginEmail" type="email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')window._fbSignIn()">
       </div>
       <div class="auth-form-group">
         <label class="auth-label">Password</label>
-        <input class="auth-input" type="password" placeholder="••••••••">
+        <input class="auth-input" id="loginPassword" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')window._fbSignIn()">
       </div>
 
-      <button class="btn-auth" onclick="showToast('Signed in. Welcome back ✦')">Sign In</button>
+      <button class="btn-auth" id="loginBtn" onclick="window._fbSignIn()">Sign In</button>
 
       <div class="auth-switch">
         Don't have an account? <a onclick="navigate('signup')">Join Equal Ground</a>
@@ -2196,30 +2731,32 @@ footer {
       <h2 class="auth-title">Join Equal Ground</h2>
       <p class="auth-sub">Become part of a community that thinks carefully</p>
 
+      <div class="auth-error" id="signupError"></div>
+
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
         <div class="auth-form-group">
           <label class="auth-label">Full Name</label>
-          <input class="auth-input" type="text" placeholder="Your name">
+          <input class="auth-input" id="signupName" type="text" placeholder="Your name">
         </div>
         <div class="auth-form-group">
           <label class="auth-label">Username</label>
-          <input class="auth-input" type="text" placeholder="@handle">
+          <input class="auth-input" id="signupUsername" type="text" placeholder="@handle">
         </div>
       </div>
       <div class="auth-form-group">
         <label class="auth-label">Email</label>
-        <input class="auth-input" type="email" placeholder="your@email.com">
+        <input class="auth-input" id="signupEmail" type="email" placeholder="your@email.com">
       </div>
       <div class="auth-form-group">
         <label class="auth-label">Password</label>
-        <input class="auth-input" type="password" placeholder="••••••••">
+        <input class="auth-input" id="signupPassword" type="password" placeholder="Min. 6 characters">
       </div>
       <div class="auth-form-group">
         <label class="auth-label">Short Bio <span style="opacity:0.4;font-weight:400;letter-spacing:0;">(optional)</span></label>
-        <input class="auth-input" type="text" placeholder="Tell us who you are">
+        <input class="auth-input" id="signupBio" type="text" placeholder="Tell us who you are">
       </div>
 
-      <button class="btn-auth" onclick="showToast('Account created. Welcome ✦')">Create Account</button>
+      <button class="btn-auth" id="signupBtn" onclick="window._fbSignUp()">Create Account</button>
 
       <div class="auth-switch">
         Already a member? <a onclick="navigate('login')">Sign In</a>
@@ -2233,6 +2770,28 @@ footer {
 
 <!-- ═══════════════════════════════════════════ ADMIN ═══ -->
 <div class="page" id="page-admin">
+  <!-- Auth Gate (shown when not logged in as admin) -->
+  <div class="admin-gate" id="adminGate" style="display:none;">
+    <div class="admin-gate-card">
+      <div style="font-size:32px;margin-bottom:16px;">⊜</div>
+      <div class="admin-gate-title">Admin Access</div>
+      <div class="admin-gate-sub">This area is restricted to administrators.</div>
+      <div class="auth-error" id="adminGateError" style="text-align:left;"></div>
+      <div class="auth-form-group" style="text-align:left;">
+        <label class="auth-label">Email</label>
+        <input class="auth-input" id="adminGateEmail" type="email" placeholder="admin@email.com" onkeydown="if(event.key==='Enter')window._adminGateSignIn()">
+      </div>
+      <div class="auth-form-group" style="text-align:left;">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="adminGatePassword" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')window._adminGateSignIn()">
+      </div>
+      <button class="btn-auth" id="adminGateBtn" onclick="window._adminGateSignIn()">Sign In to Admin</button>
+      <div style="margin-top:20px;"><a href="/" style="color:rgba(255,255,255,0.4);font-size:13px;font-family:'Inter',sans-serif;text-decoration:none;">← Return to site</a></div>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard (shown when authenticated as admin) -->
+  <div id="adminDashboard" style="display:none;">
   <div class="admin-page">
 
     <!-- Sidebar -->
@@ -2268,10 +2827,11 @@ footer {
         <div class="sidebar-user">
           <div class="user-avatar"></div>
           <div>
-            <div class="user-name">Equal Ground</div>
-            <div class="user-role">Administrator</div>
+            <div class="user-name" id="adminSidebarName">Administrator</div>
+            <div class="user-role" id="adminSidebarRole">Admin</div>
           </div>
         </div>
+        <button class="btn btn-ghost" style="width:100%;margin-top:12px;justify-content:center;font-size:12px;padding:8px;" onclick="window._fbSignOut()">Sign Out</button>
       </div>
     </div>
 
@@ -2292,7 +2852,7 @@ footer {
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-icon si-1">📝</div>
-              <div class="stat-value">0</div>
+              <div class="stat-value" id="statTotalArticles">0</div>
               <div class="stat-label">Total Articles</div>
               <div class="stat-change" style="color:var(--text-light);">No articles yet</div>
             </div>
@@ -2304,13 +2864,13 @@ footer {
             </div>
             <div class="stat-card">
               <div class="stat-icon si-3">◉</div>
-              <div class="stat-value">6</div>
-              <div class="stat-label">Board Members</div>
+              <div class="stat-value" id="statUsers">—</div>
+              <div class="stat-label">Registered Members</div>
               <div class="stat-change stat-up">✦ Est. 2026</div>
             </div>
             <div class="stat-card">
               <div class="stat-icon si-4">◻</div>
-              <div class="stat-value">0</div>
+              <div class="stat-value" id="statDrafts">0</div>
               <div class="stat-label">Drafts</div>
               <div class="stat-change" style="color:var(--text-light);">Nothing in progress yet</div>
             </div>
@@ -2332,7 +2892,7 @@ footer {
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="adminArticlesBody">
                 <tr>
                   <td colspan="6" style="text-align:center;padding:52px 24px;">
                     <div style="font-size:32px;opacity:0.25;margin-bottom:12px;">◎</div>
@@ -2349,8 +2909,8 @@ footer {
         <div class="admin-panel" id="panel-create">
           <div class="editor-layout">
             <div class="editor-main">
-              <input class="editor-title-input" placeholder="Article title…">
-              <input class="editor-sub-input" placeholder="Subtitle or pull quote…">
+              <input class="editor-title-input" id="adminArticleTitle" placeholder="Article title…">
+              <input class="editor-sub-input" id="adminArticleSubtitle" placeholder="Subtitle or pull quote…">
               <div class="editor-divider"></div>
 
               <div class="toolbar">
@@ -2381,14 +2941,14 @@ footer {
               <div class="panel-section">
                 <div class="panel-label">Status</div>
                 <div style="display:flex;gap:8px;">
-                  <button class="btn btn-primary" style="flex:1;justify-content:center;font-size:13px;padding:10px;" onclick="showToast('Article published ✦')">Publish</button>
-                  <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:13px;padding:10px;" onclick="showToast('Saved as draft')">Save Draft</button>
+                  <button class="btn btn-primary" id="publishBtn" style="flex:1;justify-content:center;font-size:13px;padding:10px;" onclick="window._fbPublishArticle('published')">Publish</button>
+                  <button class="btn btn-ghost" style="flex:1;justify-content:center;font-size:13px;padding:10px;" onclick="window._fbPublishArticle('draft')">Save Draft</button>
                 </div>
               </div>
 
               <div class="panel-section">
                 <div class="panel-label">Category</div>
-                <select class="panel-select">
+                <select class="panel-select" id="adminCategory">
                   <option>Select category…</option>
                   <option>Gender</option>
                   <option>Politics</option>
@@ -2434,19 +2994,19 @@ footer {
         <div class="admin-panel" id="panel-all-articles">
           <div class="admin-table-card">
             <div class="table-header">
-              <span class="table-title">All Articles (142)</span>
-              <input class="search-input" placeholder="🔍 Search…" style="width:200px;">
+              <span class="table-title" id="allArticlesTitle">All Articles</span>
+              <input class="search-input" placeholder="🔍 Search…" style="width:200px;" oninput="window._filterAdminArticles(this.value)">
             </div>
             <table>
               <thead>
                 <tr><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Date</th><th>Views</th><th>Actions</th></tr>
               </thead>
-              <tbody>
+              <tbody id="allArticlesBody">
                 <tr>
                   <td colspan="7" style="text-align:center;padding:52px 24px;">
                     <div style="font-size:32px;opacity:0.25;margin-bottom:12px;">◎</div>
                     <p style="font-family:'Playfair Display',serif;font-size:17px;color:var(--text-mid);margin-bottom:6px;">No articles published</p>
-                    <p style="font-size:13px;color:var(--text-light);">Use &ldquo;Create Article&rdquo; to publish your first piece.</p>
+                    <p style="font-size:13px;color:var(--text-light);">Use "Create Article" to publish your first piece.</p>
                   </td>
                 </tr>
               </tbody>
@@ -2458,13 +3018,13 @@ footer {
         <div class="admin-panel" id="panel-drafts">
           <div class="admin-table-card">
             <div class="table-header">
-              <span class="table-title">Drafts (18)</span>
+              <span class="table-title" id="draftsTitle">Drafts</span>
             </div>
             <table>
               <thead>
                 <tr><th>Title</th><th>Author</th><th>Last Edited</th><th>Actions</th></tr>
               </thead>
-              <tbody>
+              <tbody id="draftsBody">
                 <tr>
                   <td colspan="4" style="text-align:center;padding:52px 24px;">
                     <div style="font-size:32px;opacity:0.25;margin-bottom:12px;">◻</div>
@@ -2477,57 +3037,14 @@ footer {
           </div>
         </div>
 
-        
         <!-- Users Panel -->
         <div class="admin-panel" id="panel-users">
-          <div class="users-grid">
-            <div class="user-card">
-              <div class="user-card-avatar av-1">✦</div>
-              <div class="user-card-info">
-                <div class="user-card-name">Shatavisha De</div>
-                <div class="user-card-email">shatavisha@equalground.vercel.app</div>
-                <span class="user-card-role role-admin">President & Founder</span>
-              </div>
+          <div class="admin-table-card" style="padding:28px;">
+            <div class="table-header" style="margin-bottom:20px;">
+              <span class="table-title">Registered Members</span>
             </div>
-            <div class="user-card">
-              <div class="user-card-avatar av-2">✦</div>
-              <div class="user-card-info">
-                <div class="user-card-name">Ekoparnika Mukherjee</div>
-                <div class="user-card-email">ekopa@equalground.vercel.app</div>
-                <span class="user-card-role role-admin">Vice President</span>
-              </div>
-            </div>
-            <div class="user-card">
-              <div class="user-card-avatar av-3">✦</div>
-              <div class="user-card-info">
-                <div class="user-card-name">Urbi Manna</div>
-                <div class="user-card-email">urbi@equalground.vercel.app</div>
-                <span class="user-card-role role-admin">Director</span>
-              </div>
-            </div>
-            <div class="user-card">
-              <div class="user-card-avatar" style="background:linear-gradient(135deg,#c9a4b8,#8a70b0);">✦</div>
-              <div class="user-card-info">
-                <div class="user-card-name">Abhiprithi Chakraborty</div>
-                <div class="user-card-email">abhiprithi@equalground.vercel.app</div>
-                <span class="user-card-role role-contrib">Deputy Director</span>
-              </div>
-            </div>
-            <div class="user-card">
-              <div class="user-card-avatar" style="background:linear-gradient(135deg,#b8a8d0,#6b4f8a);">✦</div>
-              <div class="user-card-info">
-                <div class="user-card-name">Roopkatha Dey</div>
-                <div class="user-card-email">roopkatha@equalground.vercel.app</div>
-                <span class="user-card-role role-admin">Technical Director</span>
-              </div>
-            </div>
-            <div class="user-card">
-              <div class="user-card-avatar" style="background:linear-gradient(135deg,#d4849a,#c9a4b8);">✦</div>
-              <div class="user-card-info">
-                <div class="user-card-name">Satyaki Daw</div>
-                <div class="user-card-email">satyaki@equalground.vercel.app</div>
-                <span class="user-card-role role-contrib">Secretary</span>
-              </div>
+            <div id="adminUsersContainer">
+              <div style="text-align:center;padding:60px;color:var(--text-light);">Loading users…</div>
             </div>
           </div>
         </div>
@@ -2564,8 +3081,9 @@ footer {
 
       </div><!-- /admin-content -->
     </div><!-- /admin-main -->
-  </div>
-</div>
+  </div><!-- /admin-page -->
+  </div><!-- /adminDashboard -->
+</div><!-- /page-admin -->
 
 <!-- Toast -->
 
@@ -2929,13 +3447,11 @@ window.addEventListener('DOMContentLoaded', () => {
   const path = window.location.pathname.replace(/\/$/, '');
   const hash = window.location.hash.replace('#', '');
 
-  // /admin path → mount admin panel (Vercel rewrite delivers this page at /admin)
   if (path === '/admin') {
     _mountAdmin();
     return;
   }
 
-  // hash-based routing for all public pages (admin hash silently blocked)
   if (hash && hash !== 'admin') {
     _showPage(hash);
   } else {
@@ -2950,14 +3466,89 @@ window.addEventListener('popstate', () => {
   _showPage(hash);
 });
 
-// ── Mount admin (private)
+// ── Mount admin — checks auth state before showing dashboard
 function _mountAdmin() {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const ap = document.getElementById('page-admin');
   if (ap) ap.classList.add('active');
   document.getElementById('mainNav').style.display = 'none';
   document.title = 'Admin — Equal Ground';
+
+  const user = window._getCurrentUser ? window._getCurrentUser() : null;
+  const admin = window._getIsAdmin ? window._getIsAdmin() : false;
+
+  if (user && admin) {
+    _showAdminDashboard(user);
+  } else if (user && !admin) {
+    // Logged in but not admin — show gate with error
+    document.getElementById('adminGate').style.display = 'flex';
+    document.getElementById('adminDashboard').style.display = 'none';
+    const err = document.getElementById('adminGateError');
+    err.textContent = 'Your account does not have admin access.';
+    err.classList.add('show');
+  } else {
+    // Not logged in — show gate
+    document.getElementById('adminGate').style.display = 'flex';
+    document.getElementById('adminDashboard').style.display = 'none';
+  }
 }
+
+function _showAdminDashboard(user) {
+  document.getElementById('adminGate').style.display = 'none';
+  document.getElementById('adminDashboard').style.display = 'block';
+  // Update sidebar name
+  const nameEl = document.getElementById('adminSidebarName');
+  const roleEl = document.getElementById('adminSidebarRole');
+  if (nameEl) nameEl.textContent = user.displayName || user.email.split('@')[0];
+  if (roleEl) roleEl.textContent = 'Administrator';
+  // Load data
+  if (window._loadAdminArticles) window._loadAdminArticles();
+  if (window._loadAdminStats) window._loadAdminStats();
+}
+
+// Admin gate sign-in (signs in then re-checks admin status)
+window._adminGateSignIn = async function() {
+  const email = document.getElementById('adminGateEmail')?.value.trim();
+  const pass = document.getElementById('adminGatePassword')?.value;
+  const errEl = document.getElementById('adminGateError');
+  const btn = document.getElementById('adminGateBtn');
+  errEl.classList.remove('show');
+  if (!email || !pass) { errEl.textContent = 'Please fill in all fields.'; errEl.classList.add('show'); return; }
+  btn.textContent = 'Signing in…';
+  btn.classList.add('auth-loading');
+  try {
+    // Dynamic import to access Firebase auth from module scope
+    const { getAuth, signInWithEmailAndPassword } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js');
+    // Auth instance is already initialised in the module script above;
+    // use the globally exposed helper instead
+    // We trigger via the module's signIn by dispatching a fake login event
+    // Simpler: just call _fbSignIn after setting the gate inputs to login inputs
+    document.getElementById('loginEmail').value = email;
+    document.getElementById('loginPassword').value = pass;
+    await window._fbSignIn();
+    // After sign in, auth state listener fires and updates _getCurrentUser
+    // Wait a tick then re-evaluate
+    setTimeout(() => {
+      const u = window._getCurrentUser ? window._getCurrentUser() : null;
+      const isA = window._getIsAdmin ? window._getIsAdmin() : false;
+      if (u && isA) {
+        _showAdminDashboard(u);
+      } else if (u) {
+        errEl.textContent = 'Signed in, but your account is not an admin.';
+        errEl.classList.add('show');
+      } else {
+        errEl.textContent = 'Sign in failed. Check your credentials.';
+        errEl.classList.add('show');
+      }
+    }, 1500);
+  } catch(e) {
+    errEl.textContent = 'Sign in error: ' + e.message;
+    errEl.classList.add('show');
+  } finally {
+    btn.textContent = 'Sign In to Admin';
+    btn.classList.remove('auth-loading');
+  }
+};
 
 // ── Internal page renderer
 function _showPage(page) {
@@ -2981,15 +3572,20 @@ function _showPage(page) {
   if (!['admin'].includes(page)) {
     history.pushState(null, '', page === 'home' ? '/' : '#' + page);
   }
+
+  // Fire Firebase data loaders on navigation
+  if (page === 'articles' && window._loadPublicArticles) {
+    window._loadPublicArticles();
+  }
 }
 
 // ── Public navigate() — admin route is silently unreachable
 function navigate(page) {
-  if (page === 'admin') return; // no-op — admin is URL-only
+  if (page === 'admin') return;
   _showPage(page);
 }
 
-// ── Admin sidebar panel switcher
+// ── Admin sidebar panel switcher — loads data when switching panels
 function switchPanel(panel, el) {
   document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
   const target = document.getElementById('panel-' + panel);
@@ -3007,12 +3603,53 @@ function switchPanel(panel, el) {
     settings: 'Settings'
   };
   document.getElementById('adminPanelTitle').textContent = titles[panel] || 'Admin';
+
+  // Load Firebase data per panel
+  if (panel === 'all-articles' || panel === 'drafts') {
+    if (window._loadAdminArticles) window._loadAdminArticles();
+  }
+  if (panel === 'users') {
+    if (window._loadAdminUsers) window._loadAdminUsers();
+  }
+  if (panel === 'dashboard') {
+    if (window._loadAdminStats) window._loadAdminStats();
+    if (window._loadAdminArticles) window._loadAdminArticles();
+  }
 }
+
+// ── Search filter for admin articles table
+window._filterAdminArticles = function(query) {
+  const rows = document.querySelectorAll('#allArticlesBody tr');
+  rows.forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(query.toLowerCase()) ? '' : 'none';
+  });
+};
 
 // ── Filter chips (articles page)
 function toggleFilter(el) {
   document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
+  const cat = el.textContent.trim();
+  if (cat === 'All') {
+    if (window._loadPublicArticles) window._loadPublicArticles();
+  } else {
+    _loadPublicArticlesByCategory(cat);
+  }
+}
+
+async function _loadPublicArticlesByCategory(cat) {
+  const container = document.getElementById('publicArticlesFeed');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:60px;color:var(--text-light);">Loading…</div>';
+  // Re-use _loadPublicArticles but filter client-side after load
+  if (window._loadPublicArticles) {
+    await window._loadPublicArticles();
+    // Filter rendered cards
+    const cards = container.querySelectorAll('.article-card');
+    cards.forEach(c => {
+      c.style.display = c.textContent.includes(cat) ? '' : 'none';
+    });
+  }
 }
 
 // ── Toast notification
