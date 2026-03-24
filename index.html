@@ -2428,29 +2428,22 @@ footer {
 <script>
 // ══════════════════════════════════════════════════════════
 //  EQUAL GROUND — ROUTING SYSTEM
-//  Admin is accessible ONLY via: equalground.vercel.app/admin
-//  It is NOT linked from any public page.
-//  No sitemap entry. No nav link. Direct URL access only.
+//  Admin: equalground.vercel.app/admin (URL-only, not linked)
+//  Vercel rewrites /admin → index.html; JS detects the path.
 // ══════════════════════════════════════════════════════════
-
-const DOMAIN = 'equalground.vercel.app';
 
 // ── Boot: determine route from URL
 window.addEventListener('DOMContentLoaded', () => {
-  const hostname = window.location.hostname;
-  const path     = window.location.pathname.replace(/\/$/, '');
-  const hash     = window.location.hash.replace('#', '');
+  const path = window.location.pathname.replace(/\/$/, '');
+  const hash = window.location.hash.replace('#', '');
 
-  // ── /admin path gate — only on the real domain or localhost dev
-  const isAdminPath = (path === '/admin');
-  const isAllowedHost = (hostname === DOMAIN || hostname === 'localhost' || hostname === '127.0.0.1');
-
-  if (isAdminPath && isAllowedHost) {
+  // /admin path → mount admin panel (Vercel rewrite delivers this page at /admin)
+  if (path === '/admin') {
     _mountAdmin();
     return;
   }
 
-  // ── hash-based routing for SPA preview (admin hash silently blocked)
+  // hash-based routing for all public pages (admin hash silently blocked)
   if (hash && hash !== 'admin') {
     _showPage(hash);
   } else {
