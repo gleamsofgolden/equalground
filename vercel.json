@@ -2,11 +2,11 @@
   "rewrites": [
     {
       "source": "/admin",
-      "destination": "/equal-ground.html"
+      "destination": "/index.html"
     },
     {
       "source": "/(.*)",
-      "destination": "/equal-ground.html"
+      "destination": "/index.html"
     }
   ],
   "headers": [
@@ -14,7 +14,7 @@
       "source": "/admin",
       "headers": [
         { "key": "X-Robots-Tag", "value": "noindex, nofollow" },
-        { "key": "Cache-Control", "value": "no-store" }
+        { "key": "Cache-Control", "value": "no-store, no-cache" }
       ]
     }
   ]
