@@ -1972,7 +1972,8 @@ const firebaseConfig = {
 
 // ── Designated admin emails (add board members here) ──
 const ADMIN_EMAILS = [
-  'roopkatha_dey@outlook.com',
+  'shatavisha@equalground.vercel.app',
+  'roopkatha@equalground.vercel.app',
 ];
 
 const app = initializeApp(firebaseConfig);
@@ -2123,12 +2124,12 @@ window._fbSignIn = async function() {
   const email = emailInput?.value.trim();
   const password = passInput?.value;
 
-  errEl.classList.remove('show');
+  const showErr = (msg) => { if (errEl) { errEl.textContent = msg; errEl.classList.add('show'); } };
+  if (errEl) errEl.classList.remove('show');
 
-  if (!email || !password) { errEl.textContent = 'Please fill in all fields.'; errEl.classList.add('show'); return; }
+  if (!email || !password) { showErr('Please fill in all fields.'); return; }
 
-  btn.textContent = 'Signing in…';
-  btn.classList.add('auth-loading');
+  if (btn) { btn.textContent = 'Signing in…'; btn.classList.add('auth-loading'); }
 
   try {
     await signInWithEmailAndPassword(auth, email, password);
@@ -2143,11 +2144,10 @@ window._fbSignIn = async function() {
       'auth/too-many-requests': 'Too many attempts. Try again in a few minutes.',
       'auth/network-request-failed': 'Network error. Check your connection.',
     };
-    errEl.textContent = msgs[err.code] || 'Sign in failed: ' + err.message;
-    errEl.classList.add('show');
+    showErr(msgs[err.code] || 'Sign in failed: ' + err.message);
+    throw err; // re-throw so admin gate catch() can handle it too
   } finally {
-    btn.textContent = 'Sign In';
-    btn.classList.remove('auth-loading');
+    if (btn) { btn.textContent = 'Sign In'; btn.classList.remove('auth-loading'); }
   }
 };
 
