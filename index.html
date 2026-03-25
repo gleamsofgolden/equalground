@@ -768,123 +768,6 @@ nav {
 }
 .team-bio { font-size: 13px; line-height: 1.65; color: var(--text-light); }
 
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(26,15,46,0.8);
-  backdrop-filter: blur(8px);
-  z-index: 10000;
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-overlay.open {
-  display: flex;
-  animation: fadeIn 0.25s ease;
-}
-
-.auth-modal-card {
-  background: white;
-  border-radius: 28px;
-  padding: 48px;
-  max-width: 460px;
-  width: 100%;
-  margin: 20px;
-  box-shadow: 0 40px 100px rgba(0,0,0,0.3);
-}
-
-.modal-title {
-  font-family: 'Playfair Display', serif;
-  font-size: 28px;
-  font-weight: 700;
-  color: var(--deep-violet);
-  margin-bottom: 8px;
-}
-
-.modal-sub {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 16px;
-  font-style: italic;
-  color: var(--text-light);
-  margin-bottom: 24px;
-}
-
-.auth-error {
-  background: rgba(201,100,100,0.15);
-  border: 1px solid rgba(201,100,100,0.3);
-  color: #c96464;
-  border-radius: 10px;
-  padding: 12px 16px;
-  font-size: 13px;
-  margin-bottom: 16px;
-  display: none;
-}
-
-.auth-error.show { display: block; }
-
-.auth-input {
-  width: 100%;
-  font-family: 'Inter', sans-serif;
-  font-size: 15px;
-  padding: 13px 18px;
-  border: 1px solid rgba(107,79,138,0.2);
-  border-radius: 12px;
-  background: var(--cream);
-  color: var(--text-dark);
-  outline: none;
-  transition: all 0.2s;
-}
-
-.auth-input:focus {
-  border-color: var(--violet);
-  box-shadow: 0 0 0 3px rgba(107,79,138,0.1);
-}
-
-.auth-label {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--text-mid);
-  margin-bottom: 8px;
-}
-
-.btn-auth {
-  width: 100%;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 15px;
-  font-weight: 700;
-  padding: 15px;
-  border-radius: 14px;
-  border: none;
-  cursor: pointer;
-  margin-top: 8px;
-  background: linear-gradient(135deg, var(--violet) 0%, var(--rose) 100%);
-  color: white;
-  transition: all 0.25s ease;
-}
-
-.btn-auth:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(107,79,138,0.4);
-}
-
-.auth-switch {
-  text-align: center;
-  margin-top: 24px;
-  font-size: 14px;
-  color: var(--text-light);
-}
-
-.auth-switch a {
-  color: var(--violet);
-  cursor: pointer;
-  font-weight: 600;
-  text-decoration: none;
-}
 /* ── CONTACT PAGE ── */
 .contact-page { padding-top: 72px; }
 
@@ -1999,51 +1882,8 @@ footer {
 <!-- FIX 1: Toast element was missing — showToast() was crashing silently -->
 <div class="toast" id="toast"></div>
 
-<!-- Auth Modal -->
-<div class="modal-overlay" id="authModal">
-  <div class="auth-modal-card">
-    <div class="modal-title" id="authModalTitle">Sign In</div>
-    <div class="modal-sub" id="authModalSub">Continue your journey with Equal Ground</div>
-    <div class="auth-error" id="modalAuthError"></div>
-    <div id="modalAuthForm">
-      <div class="auth-form-group" style="margin-bottom: 16px;">
-        <label class="auth-label">Email</label>
-        <input class="auth-input" id="modalEmail" type="email" placeholder="your@email.com">
-      </div>
-      <div class="auth-form-group" style="margin-bottom: 16px;">
-        <label class="auth-label">Password</label>
-        <input class="auth-input" id="modalPassword" type="password" placeholder="••••••••">
-      </div>
-      <div id="modalSignupFields" style="display: none;">
-        <div class="auth-form-group" style="margin-bottom: 16px;">
-          <label class="auth-label">Full Name</label>
-          <input class="auth-input" id="modalName" type="text" placeholder="Your name">
-        </div>
-        <div class="auth-form-group" style="margin-bottom: 16px;">
-          <label class="auth-label">Username</label>
-          <input class="auth-input" id="modalUsername" type="text" placeholder="@handle">
-        </div>
-        <div class="auth-form-group" style="margin-bottom: 16px;">
-          <label class="auth-label">Bio (optional)</label>
-          <input class="auth-input" id="modalBio" type="text" placeholder="Tell us about yourself">
-        </div>
-      </div>
-      <button class="btn-auth" id="modalAuthBtn" onclick="handleModalAuth()">Sign In</button>
-    </div>
-    <div class="auth-switch">
-      <span id="modalSwitchText">Don't have an account?</span>
-      <a onclick="toggleAuthMode()" id="modalSwitchLink">Join Equal Ground</a>
-    </div>
-    <div class="auth-switch" style="margin-top: 8px;">
-      <a onclick="closeModal()">Cancel</a>
-    </div>
-  </div>
-</div>
-  
 <!-- ═══════════════════════════════════════════ FIREBASE MODULE ═══ -->
 <script type="module">
-  let pendingAction = null;
-  let authModalMode = 'login';
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
   getAuth,
@@ -2082,8 +1922,8 @@ const firebaseConfig = {
 
 // ── Designated admin emails ──
 const ADMIN_EMAILS = [
-  'deshatavisha10@gmail.com',
-  'roopkatha_dey@outlook.com',
+  'shatavisha@equalground.vercel.app',
+  'roopkatha@equalground.vercel.app',
 ];
 
 const app = initializeApp(firebaseConfig);
@@ -2251,7 +2091,17 @@ window._fbSignIn = async function(emailOverride, passwordOverride, errElId, btnI
   try {
     await signInWithEmailAndPassword(auth, emailInput, passInput);
     showToast('Welcome back ✦');
-    return true; // success
+    // Run any pending auth-gated action
+    if (window._pendingAuthAction) {
+      setTimeout(() => {
+        if (window._pendingAuthAction) {
+          window._pendingAuthAction(auth.currentUser);
+          window._pendingAuthAction = null;
+          window._closeAuthModal();
+        }
+      }, 800); // small delay for onAuthStateChanged to fire first
+    }
+    return true;
   } catch(err) {
     const msgs = {
       'auth/user-not-found': 'No account found with this email.',
@@ -2287,216 +2137,6 @@ window._fbSignOut = async function() {
     navigate('home');
   } catch(e) { showToast('Error signing out.'); }
 };
-
-window.requireAuth = function(callback, actionDescription = 'this action') {
-  if (currentUser) {
-    callback();
-  } else {
-    pendingAction = callback;
-    openAuthModal();
-    showToast(`Please sign in to ${actionDescription}`);
-  }
-};
-
-window.openAuthModal = function() {
-  const modal = document.getElementById('authModal');
-  if (modal) modal.classList.add('open');
-  setAuthModalMode('login');
-};
-
-window.closeModal = function() {
-  const modal = document.getElementById('authModal');
-  if (modal) modal.classList.remove('open');
-  document.getElementById('modalAuthError').classList.remove('show');
-};
-
-window.toggleAuthMode = function() {
-  const newMode = authModalMode === 'login' ? 'signup' : 'login';
-  setAuthModalMode(newMode);
-};
-
-function setAuthModalMode(mode) {
-  authModalMode = mode;
-  const title = document.getElementById('authModalTitle');
-  const sub = document.getElementById('authModalSub');
-  const btn = document.getElementById('modalAuthBtn');
-  const switchText = document.getElementById('modalSwitchText');
-  const switchLink = document.getElementById('modalSwitchLink');
-  const signupFields = document.getElementById('modalSignupFields');
-  
-  if (mode === 'login') {
-    title.textContent = 'Sign In';
-    sub.textContent = 'Welcome back to Equal Ground';
-    btn.textContent = 'Sign In';
-    switchText.textContent = "Don't have an account?";
-    switchLink.textContent = 'Join Equal Ground';
-    signupFields.style.display = 'none';
-  } else {
-    title.textContent = 'Join Equal Ground';
-    sub.textContent = 'Become part of a community that thinks carefully';
-    btn.textContent = 'Create Account';
-    switchText.textContent = 'Already have an account?';
-    switchLink.textContent = 'Sign In';
-    signupFields.style.display = 'block';
-  }
-}
-
-window.handleModalAuth = async function() {
-  const email = document.getElementById('modalEmail').value.trim();
-  const password = document.getElementById('modalPassword').value;
-  const errorEl = document.getElementById('modalAuthError');
-  const btn = document.getElementById('modalAuthBtn');
-  
-  errorEl.classList.remove('show');
-  
-  if (!email || !password) {
-    errorEl.textContent = 'Please fill in all fields.';
-    errorEl.classList.add('show');
-    return;
-  }
-  
-  btn.textContent = authModalMode === 'login' ? 'Signing in...' : 'Creating account...';
-  btn.classList.add('auth-loading');
-  
-  try {
-    if (authModalMode === 'login') {
-      await signInWithEmailAndPassword(auth, email, password);
-      showToast('Welcome back ✦');
-    } else {
-      const name = document.getElementById('modalName').value.trim();
-      const username = document.getElementById('modalUsername').value.trim().replace('@', '');
-      const bio = document.getElementById('modalBio').value.trim();
-      
-      if (!name) {
-        throw new Error('Please enter your name');
-      }
-      if (password.length < 6) {
-        throw new Error('Password must be at least 6 characters');
-      }
-      
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(cred.user, { displayName: name });
-      await setDoc(doc(db, 'users', cred.user.uid), {
-        displayName: name,
-        username: username || email.split('@')[0],
-        email: email,
-        bio: bio || '',
-        role: 'member',
-        createdAt: serverTimestamp(),
-        savedArticles: [],
-        reactions: []
-      });
-      showToast('Welcome to Equal Ground ✦');
-    }
-    closeModal();
-    if (pendingAction) {
-      pendingAction();
-      pendingAction = null;
-    }
-  } catch(err) {
-    const msgs = {
-      'auth/email-already-in-use': 'This email is already registered.',
-      'auth/invalid-email': 'Please enter a valid email address.',
-      'auth/weak-password': 'Password must be at least 6 characters.',
-      'auth/user-not-found': 'No account found with this email.',
-      'auth/wrong-password': 'Incorrect password.'
-    };
-    errorEl.textContent = msgs[err.code] || err.message;
-    errorEl.classList.add('show');
-  } finally {
-    btn.textContent = authModalMode === 'login' ? 'Sign In' : 'Create Account';
-    btn.classList.remove('auth-loading');
-  }
-};
-
-// Update your existing _fbSignOut function to handle modal state
-window._fbSignOut = async function() {
-  try {
-    await signOut(auth);
-    showToast('Signed out. See you soon ✦');
-    navigate('home');
-  } catch(e) {
-    showToast('Error signing out');
-  }
-};
-
-// Add user dashboard loading function
-async function loadUserDashboard() {
-  if (!currentUser) return;
-  
-  const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
-  const userData = userDoc.data();
-  
-  const displayNameEl = document.getElementById('profileDisplayName');
-  const usernameEl = document.getElementById('profileUsername');
-  const bioEl = document.getElementById('profileBio');
-  
-  if (displayNameEl) displayNameEl.textContent = userData?.displayName || currentUser.displayName;
-  if (usernameEl) usernameEl.textContent = userData?.username ? '@' + userData.username : '@' + currentUser.email.split('@')[0];
-  if (bioEl) bioEl.textContent = userData?.bio || 'Add a bio to tell the community who you are.';
-}
-
-// Add this to your existing onAuthStateChanged function (inside the if(user) block)
-if (user) {
-  // ... existing code ...
-  loadUserDashboard(); // Add this line
-}
-4. Update your navigation buttons (find and replace existing button onclick handlers):
-Replace all instances where you had onclick="navigate('signup')" or onclick="navigate('login')" with:
-
-html
-onclick="openAuthModal()"
-For example, in your hero section:
-
-html
-<button class="btn btn-primary btn-lg" onclick="navigate('articles')">Read Articles</button>
-<button class="btn btn-outline btn-lg" onclick="requireAuth(() => navigate('write'), 'join the community')">Join Community</button>
-And in your nav actions area, the buttons should call openAuthModal() instead of navigate.
-
-5. Update your profile page HTML (add this after the existing profile structure):
-Add this to your profile page section (around line 400-500 in the profile div):
-
-html
-<!-- Replace your existing profile page content with this -->
-<div class="page" id="page-profile">
-  <div style="padding-top: 72px; min-height: 100vh;">
-    <div class="container" style="padding: 80px 0;">
-      <button class="back-btn" onclick="navigate('home')">← Home</button>
-      <div style="display: grid; grid-template-columns: 280px 1fr; gap: 48px;">
-        <div>
-          <div style="background: white; border-radius: 20px; padding: 32px; text-align: center;">
-            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, var(--violet), var(--rose)); border-radius: 50%; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; font-size: 32px; color: white;">✦</div>
-            <h3 id="profileDisplayName" style="font-family: 'Playfair Display', serif; font-size: 20px; color: var(--deep-violet);">Loading...</h3>
-            <p id="profileUsername" style="color: var(--text-light); font-size: 14px;">@username</p>
-            <p id="profileBio" style="margin-top: 16px; font-size: 14px; color: var(--text-mid);"></p>
-            <button class="btn btn-ghost" style="margin-top: 20px; width: 100%;" onclick="editProfile()">Edit Profile</button>
-            <button class="btn btn-ghost" style="margin-top: 12px; width: 100%;" onclick="window._fbSignOut()">Sign Out</button>
-          </div>
-        </div>
-        <div>
-          <div style="background: white; border-radius: 20px; padding: 32px;">
-            <h3 style="font-family: 'Playfair Display', serif; font-size: 24px; margin-bottom: 24px;">My Dashboard</h3>
-            
-            <div style="margin-bottom: 40px;">
-              <h4 style="font-weight: 600; margin-bottom: 16px;">📖 Saved Articles</h4>
-              <div id="savedArticlesList"></div>
-            </div>
-            
-            <div style="margin-bottom: 40px;">
-              <h4 style="font-weight: 600; margin-bottom: 16px;">✍️ My Submissions</h4>
-              <div id="mySubmissionsList"></div>
-            </div>
-            
-            <div>
-              <h4 style="font-weight: 600; margin-bottom: 16px;">💭 My Reactions</h4>
-              <div id="myReactionsList"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
 
 // ══════════════════════════════════════════════════════════
 //  ADMIN: ARTICLE MANAGEMENT
@@ -2667,17 +2307,257 @@ window._fbSaveProfile = async function() {
   } catch(e) { showToast('Error saving: ' + e.message); }
 };
 
-window.editProfile = function() {
-  const newBio = prompt('Edit your bio:', document.getElementById('profileBio')?.textContent || '');
-  if (newBio !== null && currentUser) {
-    updateDoc(doc(db, 'users', currentUser.uid), { bio: newBio }).then(() => {
-      showToast('Profile updated ✦');
-      loadUserDashboard();
-    }).catch(() => showToast('Error updating profile'));
+window._getCurrentUser = () => currentUser;
+  // ══════════════════════════════════════════════════════════
+//  AUTH GATE HELPER
+//  Call this before any restricted action
+// ══════════════════════════════════════════════════════════
+window._requireAuth = function(callback) {
+  if (currentUser) {
+    callback(currentUser);
+  } else {
+    // Store the callback to run after login
+    window._pendingAuthAction = callback;
+    // Show login modal instead of navigating away
+    _showAuthModal();
   }
 };
 
-window._getCurrentUser = () => currentUser;
+function _showAuthModal() {
+  const modal = document.getElementById('authModal');
+  if (modal) modal.classList.add('open');
+}
+
+window._closeAuthModal = function() {
+  const modal = document.getElementById('authModal');
+  if (modal) modal.classList.remove('open');
+  window._pendingAuthAction = null;
+};
+
+// After successful sign-in, run the pending action
+// Add this line inside _fbSignIn's try block, AFTER showToast('Welcome back ✦'):
+//   if (window._pendingAuthAction) { window._pendingAuthAction(auth.currentUser); window._pendingAuthAction = null; window._closeAuthModal(); }
+// (See the modified _fbSignIn below)
+
+
+// ══════════════════════════════════════════════════════════
+//  SAVES — persistent, one per user per article
+// ══════════════════════════════════════════════════════════
+window._fbToggleSave = async function(articleId, articleTitle, btnEl) {
+  window._requireAuth(async (user) => {
+    const saveRef = doc(db, 'saves', user.uid + '_' + articleId);
+    const snap = await getDoc(saveRef);
+    if (snap.exists()) {
+      await deleteDoc(saveRef);
+      if (btnEl) { btnEl.classList.remove('saved'); btnEl.textContent = '◻'; }
+      showToast('Removed from saved');
+    } else {
+      await setDoc(saveRef, {
+        userId: user.uid,
+        articleId,
+        articleTitle: articleTitle || '',
+        savedAt: serverTimestamp()
+      });
+      if (btnEl) { btnEl.classList.add('saved'); btnEl.textContent = '◼'; }
+      showToast('Saved to your profile ✦');
+    }
+  });
+};
+
+// Load saved state for an article (call on article render)
+window._fbLoadSaveState = async function(articleId, btnEl) {
+  if (!currentUser || !btnEl) return;
+  const saveRef = doc(db, 'saves', currentUser.uid + '_' + articleId);
+  const snap = await getDoc(saveRef);
+  if (snap.exists()) {
+    btnEl.classList.add('saved');
+    btnEl.textContent = '◼';
+  }
+};
+
+// Load all saved articles for profile dashboard
+window._fbLoadSavedArticles = async function() {
+  const container = document.getElementById('ptab-saved');
+  if (!container || !currentUser) return;
+  try {
+    const q = query(collection(db, 'saves'), where('userId', '==', currentUser.uid), orderBy('savedAt', 'desc'));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      container.innerHTML = `<div style="padding:80px 40px;border-radius:20px;border:1.5px dashed rgba(107,79,138,0.18);background:linear-gradient(135deg,rgba(232,218,240,0.3),rgba(245,224,232,0.2));text-align:center;">
+        <div style="font-size:36px;margin-bottom:16px;opacity:0.3;">◻</div>
+        <p style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--deep-violet);margin-bottom:10px;">Nothing saved yet</p>
+        <p style="font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--text-light);">Bookmark articles as they arrive to see them here.</p>
+      </div>`;
+      return;
+    }
+    const items = [];
+    snap.forEach(d => items.push(d.data()));
+    container.innerHTML = items.map(s => `
+      <div style="background:white;border-radius:18px;border:1px solid var(--card-border);padding:20px 24px;display:flex;align-items:center;gap:14px;margin-bottom:12px;cursor:pointer;">
+        <div style="width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--lavender),var(--violet));flex-shrink:0;"></div>
+        <div style="flex:1;">
+          <div style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;color:var(--text-dark);margin-bottom:4px;">${s.articleTitle || 'Untitled Article'}</div>
+          <div style="font-size:12px;color:var(--text-light);">Saved ${s.savedAt?.toDate ? s.savedAt.toDate().toLocaleDateString() : ''}</div>
+        </div>
+        <span style="font-size:18px;cursor:pointer;opacity:0.4;" onclick="window._fbToggleSave('${s.articleId}', '', this.parentElement); this.parentElement.remove();">✕</span>
+      </div>
+    `).join('');
+  } catch(e) { console.error('Error loading saves:', e); }
+};
+
+
+// ══════════════════════════════════════════════════════════
+//  REACTIONS — one per user per article, toggleable
+// ══════════════════════════════════════════════════════════
+window._fbReact = async function(articleId, reactionType, btnEl) {
+  window._requireAuth(async (user) => {
+    const reactionRef = doc(db, 'reactions', user.uid + '_' + articleId + '_' + reactionType);
+    const snap = await getDoc(reactionRef);
+    const countEl = btnEl?.querySelector('.reaction-count');
+    const current = parseInt(countEl?.textContent) || 0;
+
+    if (snap.exists()) {
+      // Toggle off
+      await deleteDoc(reactionRef);
+      if (btnEl) btnEl.classList.remove('reacted');
+      if (countEl) countEl.textContent = Math.max(0, current - 1);
+      // Decrement Firestore article counter
+      try {
+        const articleRef = doc(db, 'articles', articleId);
+        await updateDoc(articleRef, { [`reactions.${reactionType}`]: Math.max(0, (snap.data().articleCount || 1) - 1) });
+      } catch(e) {}
+    } else {
+      // Toggle on
+      await setDoc(reactionRef, {
+        userId: user.uid,
+        articleId,
+        type: reactionType,
+        reactedAt: serverTimestamp()
+      });
+      if (btnEl) btnEl.classList.add('reacted');
+      if (countEl) countEl.textContent = current + 1;
+    }
+    showToast('Reaction recorded ✦');
+  });
+};
+
+// Load reaction states for an article (call after rendering article)
+window._fbLoadReactions = async function(articleId, container) {
+  if (!currentUser || !container) return;
+  const types = ['stayed_with_me', 'uncomfortable', 'needs_to_be_heard'];
+  for (const type of types) {
+    const ref = doc(db, 'reactions', currentUser.uid + '_' + articleId + '_' + type);
+    const snap = await getDoc(ref);
+    if (snap.exists()) {
+      const btn = container.querySelector(`[data-reaction="${type}"]`);
+      if (btn) btn.classList.add('reacted');
+    }
+  }
+};
+
+
+// ══════════════════════════════════════════════════════════
+//  SUBMISSIONS — pending admin approval
+// ══════════════════════════════════════════════════════════
+window._fbSubmitWriting = async function() {
+  window._requireAuth(async (user) => {
+    const title = document.getElementById('writeTitle')?.value.trim();
+    const body = document.getElementById('writeBody')?.innerHTML.trim();
+    const isAnon = document.getElementById('anonToggle')?.classList.contains('on');
+    const category = document.querySelector('.write-cat-btn.active')?.textContent || 'General';
+    const type = document.querySelector('.write-type-btn.active')?.textContent || 'Article';
+
+    if (!title && !body) { showToast('Please write something first.'); return; }
+
+    try {
+      await addDoc(collection(db, 'submissions'), {
+        userId: user.uid,
+        authorName: isAnon ? 'Anonymous' : (currentUserData?.displayName || user.displayName || user.email),
+        anonymous: isAnon,
+        title: title || '',
+        body: body || '',
+        category,
+        type,
+        status: 'pending', // admin must approve
+        submittedAt: serverTimestamp()
+      });
+      // Show success state
+      document.getElementById('writeForm').style.display = 'none';
+      document.getElementById('submitSuccess').classList.add('show');
+      showToast('Submitted for review ✦');
+    } catch(e) {
+      showToast('Submission failed: ' + e.message);
+    }
+  });
+};
+
+// Load user's own submissions in profile
+window._fbLoadMySubmissions = async function() {
+  const container = document.getElementById('ptab-posts');
+  if (!container || !currentUser) return;
+  try {
+    const q = query(collection(db, 'submissions'), where('userId', '==', currentUser.uid), orderBy('submittedAt', 'desc'));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      container.innerHTML = `<div style="padding:80px 40px;border-radius:20px;border:1.5px dashed rgba(107,79,138,0.18);background:linear-gradient(135deg,rgba(232,218,240,0.3),rgba(245,224,232,0.2));text-align:center;">
+        <div style="font-size:36px;margin-bottom:16px;opacity:0.3;">✦</div>
+        <p style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--deep-violet);margin-bottom:10px;">No posts yet</p>
+        <p style="font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--text-light);margin-bottom:24px;">Your submissions will appear here after you write.</p>
+        <button class="btn btn-primary" onclick="navigate('write')">Start writing →</button>
+      </div>`;
+      return;
+    }
+    const statusColor = { pending: '#c9a4b8', approved: '#3a9e6a', rejected: '#c96464' };
+    const items = [];
+    snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+    container.innerHTML = items.map(s => `
+      <div style="background:white;border-radius:18px;border:1px solid var(--card-border);padding:24px;margin-bottom:12px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;">
+          <div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--deep-violet);">${s.title || '(Untitled)'}</div>
+          <span style="font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:${statusColor[s.status] || '#c9a4b8'}22;color:${statusColor[s.status] || '#c9a4b8'};white-space:nowrap;text-transform:uppercase;letter-spacing:0.5px;">${s.status}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-light);">${s.category} · ${s.submittedAt?.toDate ? s.submittedAt.toDate().toLocaleDateString() : 'Pending'}</div>
+      </div>
+    `).join('');
+  } catch(e) { console.error('Error loading submissions:', e); }
+};
+
+
+// ══════════════════════════════════════════════════════════
+//  ADMIN: SUBMISSION MANAGEMENT
+// ══════════════════════════════════════════════════════════
+window._fbLoadSubmissions = async function() {
+  const container = document.getElementById('adminSubmissionsBody');
+  if (!container) return;
+  try {
+    const q = query(collection(db, 'submissions'), orderBy('submittedAt', 'desc'));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      container.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-light);">No submissions yet.</td></tr>`;
+      return;
+    }
+    const items = [];
+    snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+    container.innerHTML = items.map(s => `<tr>
+      <td style="font-weight:600;color:var(--deep-violet);">${s.title || '(Untitled)'}</td>
+      <td>${s.authorName || '—'}</td>
+      <td><span class="badge-chip">${s.category || '—'}</span></td>
+      <td><span class="status-pill ${s.status === 'approved' ? 'status-live' : s.status === 'rejected' ? '' : 'status-draft'}" style="${s.status === 'rejected' ? 'background:rgba(201,100,100,0.1);color:#c96464;' : ''}">${s.status}</span></td>
+      <td style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;color:#3a9e6a;" onclick="window._fbUpdateSubmission('${s.id}','approved')">Approve</button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:5px 12px;color:#c96464;" onclick="window._fbUpdateSubmission('${s.id}','rejected')">Reject</button>
+      </td>
+    </tr>`).join('');
+  } catch(e) { console.error('Error:', e); }
+};
+
+window._fbUpdateSubmission = async function(id, status) {
+  try {
+    await updateDoc(doc(db, 'submissions', id), { status });
+    showToast(status === 'approved' ? 'Submission approved ✦' : 'Submission rejected');
+    window._fbLoadSubmissions();
+  } catch(e) { showToast('Error: ' + e.message); }
+};
 window._getIsAdmin = () => isAdmin;
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -3004,6 +2884,9 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="sidebar-link" onclick="switchPanel('create', this)"><span class="icon">✦</span> Create Article</div>
           <div class="sidebar-link" onclick="switchPanel('all-articles', this)"><span class="icon">≡</span> All Articles</div>
           <div class="sidebar-link" onclick="switchPanel('drafts', this)"><span class="icon">◻</span> Drafts</div>
+          <div class="sidebar-link" onclick="switchPanel('submissions', this)">
+  <span class="icon">📥</span> Submissions
+</div>
           <p class="sidebar-group-label">Manage</p>
           <div class="sidebar-link" onclick="switchPanel('users', this)"><span class="icon">◉</span> Users</div>
           <div class="sidebar-link" onclick="switchPanel('settings', this)"><span class="icon">⊛</span> Settings</div>
@@ -3147,6 +3030,19 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
           </div>
 
+          <!-- Submissions Panel -->
+<div class="admin-panel" id="panel-submissions">
+  <div class="admin-table-card">
+    <div class="table-header"><span class="table-title">Member Submissions</span></div>
+    <table>
+      <thead><tr><th>Title</th><th>Author</th><th>Category</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="adminSubmissionsBody">
+        <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-light);">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
           <!-- Users Panel -->
           <div class="admin-panel" id="panel-users">
             <div class="admin-table-card" style="padding:28px;">
@@ -3241,7 +3137,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="reaction-btn" onclick="react(this)">🤍 This stayed with me <span class="reaction-count">0</span></button>
               <button class="reaction-btn" onclick="react(this)">◎ Made me uncomfortable <span class="reaction-count">0</span></button>
               <button class="reaction-btn" onclick="react(this)">⊕ Needs to be heard <span class="reaction-count">0</span></button>
-              <button class="bookmark-btn" onclick="bookmark(this)" title="Save">◻</button>
+              <button class="bookmark-btn" onclick="window._fbToggleSave(articleId, articleTitle, this)" title="Save">◻</button>
             </div>
           </div>
           <div class="feed-item">
@@ -3255,7 +3151,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="reactions-row">
               <button class="reaction-btn" onclick="react(this)">🤍 This stayed with me <span class="reaction-count">12</span></button>
               <button class="reaction-btn" onclick="react(this)">⊕ Needs to be heard <span class="reaction-count">8</span></button>
-              <button class="bookmark-btn" onclick="bookmark(this)" title="Save">◻</button>
+              <button class="bookmark-btn" onclick="window._fbToggleSave(articleId, articleTitle, this)" title="Save">◻</button>
             </div>
           </div>
         </div>
@@ -3351,7 +3247,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="write-sidebar-card">
             <div class="write-sidebar-label">Actions</div>
             <div style="display:flex;flex-direction:column;gap:10px;">
-              <button class="btn btn-primary" style="justify-content:center;" onclick="submitWrite()">Submit for review →</button>
+              <button class="btn btn-primary" style="justify-content:center;" oonclick="window._fbSubmitWriting()">Submit for review →</button>
               <button class="btn btn-ghost" style="justify-content:center;font-size:13px;" onclick="showToast('Saved as draft')">Save draft</button>
             </div>
           </div>
@@ -3616,6 +3512,7 @@ function switchPanel(panel, el) {
   if (panel === 'all-articles' || panel === 'drafts') { if (window._loadAdminArticles) window._loadAdminArticles(); }
   if (panel === 'users') { if (window._loadAdminUsers) window._loadAdminUsers(); }
   if (panel === 'dashboard') { if (window._loadAdminStats) window._loadAdminStats(); if (window._loadAdminArticles) window._loadAdminArticles(); }
+  if (panel === 'submissions') { if (window._fbLoadSubmissions) window._fbLoadSubmissions(); }
 }
 
 window._filterAdminArticles = function(query) {
@@ -3702,7 +3599,7 @@ function postMicro() {
     <div class="reactions-row">
       <button class="reaction-btn" onclick="react(this)">🤍 This stayed with me <span class="reaction-count">0</span></button>
       <button class="reaction-btn" onclick="react(this)">⊕ This needs to be heard <span class="reaction-count">0</span></button>
-      <button class="bookmark-btn" onclick="bookmark(this)">◻</button>
+      <button class="bookmark-btn" onclick="window._fbToggleSave(articleId, articleTitle, this)">◻</button>
     </div>`;
   container.insertBefore(item, container.firstChild);
   inp.value = '';
@@ -3749,7 +3646,12 @@ function switchProfileTab(el, tab) {
     const panel = document.getElementById('ptab-' + t);
     if (panel) panel.style.display = t === tab ? 'block' : 'none';
   });
+  // ADD THESE:
+  if (tab === 'saved' && window._fbLoadSavedArticles) window._fbLoadSavedArticles();
+  if (tab === 'posts' && window._fbLoadMySubmissions) window._fbLoadMySubmissions();
 }
+```
+
 
 function openShareModal() { document.getElementById('shareModal').classList.add('open'); }
 function closeModal() {
@@ -3771,5 +3673,22 @@ function saveReflect() {
   inp.value = '';
 }
 </script>
+  <!-- ═══════════════════════════════════════════ AUTH GATE MODAL ═══ -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal-card" style="max-width:420px;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:28px;margin-bottom:8px;">⊜</div>
+      <h2 class="modal-title">Join to continue</h2>
+      <p class="modal-sub">This feature is for Equal Ground members. It only takes a moment.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-primary" style="justify-content:center;padding:14px;font-size:14px;" onclick="window._closeAuthModal(); navigate('signup')">Create free account →</button>
+      <button class="btn btn-ghost" style="justify-content:center;padding:14px;font-size:14px;" onclick="window._closeAuthModal(); navigate('login')">Sign in</button>
+    </div>
+    <div style="text-align:center;margin-top:16px;">
+      <a onclick="window._closeAuthModal()" style="font-size:13px;color:var(--text-light);cursor:pointer;">Maybe later</a>
+    </div>
+  </div>
+</div>
 </body>
 </html>
