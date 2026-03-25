@@ -2307,6 +2307,71 @@ window._fbSaveProfile = async function() {
   } catch(e) { showToast('Error saving: ' + e.message); }
 };
 
+// ══════════════════════════════════════════════════════════
+//  COMMUNITY FEED — real-time, persisted to Firestore
+// ══════════════════════════════════════════════════════════
+window._fbPostMicro = async function(text) {
+  if (!currentUser) return;
+  try {
+    await addDoc(collection(db, 'posts'), {
+      text,
+      userId: currentUser.uid,
+      authorName: currentUserData?.displayName || currentUser.displayName || currentUser.email.split('@')[0],
+      anonymous: false,
+      type: 'micro',
+      topic: '',
+      createdAt: serverTimestamp(),
+      reactions: { stayed: 0, uncomfortable: 0, heard: 0 }
+    });
+    showToast('Posted ✦');
+  } catch(e) { showToast('Post failed: ' + e.message); }
+};
+
+window._fbLoadFeed = function() {
+  const container = document.getElementById('feedContainer');
+  if (!container) return;
+
+  // Real-time listener — updates for ALL users instantly
+  const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+  onSnapshot(q, (snap) => {
+    // Keep the two static seed posts at the bottom, replace dynamic ones
+    const staticPosts = container.querySelectorAll('.feed-item[data-static]');
+    // Remove all non-static posts
+    container.querySelectorAll('.feed-item:not([data-static])').forEach(el => el.remove());
+
+    snap.forEach(d => {
+      const p = { id: d.id, ...d.data() };
+      const date = p.createdAt?.toDate ? p.createdAt.toDate().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'Just now';
+      const item = document.createElement('div');
+      item.className = 'feed-item';
+      item.setAttribute('data-post-id', p.id);
+      item.innerHTML = `
+        <div class="feed-meta">
+          <div class="feed-avatar" style="background:linear-gradient(135deg,var(--mauve),var(--violet));"></div>
+          <div>
+            <div class="feed-author">${p.anonymous ? 'Anonymous' : p.authorName}</div>
+            <div class="feed-time">${date}</div>
+          </div>
+          <span class="feed-type-badge badge-micro">thought</span>
+          ${p.anonymous ? '<span class="feed-anon-badge">Anonymous</span>' : ''}
+        </div>
+        <p class="feed-text">"${p.text}"</p>
+        <div class="reactions-row">
+          <button class="reaction-btn" onclick="react(this)">🤍 This stayed with me <span class="reaction-count">${p.reactions?.stayed || 0}</span></button>
+          <button class="reaction-btn" onclick="react(this)">◎ Made me uncomfortable <span class="reaction-count">${p.reactions?.uncomfortable || 0}</span></button>
+          <button class="reaction-btn" onclick="react(this)">⊕ Needs to be heard <span class="reaction-count">${p.reactions?.heard || 0}</span></button>
+          <button class="bookmark-btn" onclick="window._fbToggleSave('${p.id}', '${p.text.substring(0,30)}', this)">◻</button>
+        </div>`;
+      // Insert before static posts
+      if (container.firstChild) {
+        container.insertBefore(item, container.firstChild);
+      } else {
+        container.appendChild(item);
+      }
+    });
+  });
+};
+  
 window._getCurrentUser = () => currentUser;
   // ══════════════════════════════════════════════════════════
 //  AUTH GATE HELPER
@@ -3124,7 +3189,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
         <div id="feedContainer">
-          <div class="feed-item">
+          <div class="feed-item" data-static="true">
             <div class="feed-meta">
               <div class="feed-avatar" style="background:linear-gradient(135deg,var(--lavender),var(--violet));"></div>
               <div><div class="feed-author">Anonymous</div><div class="feed-time">Just now</div></div>
@@ -3140,7 +3205,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="bookmark-btn" onclick="window._fbToggleSave('demo-post-1', 'Anonymous Thought', this)" title="Save">◻</button>
             </div>
           </div>
-          <div class="feed-item">
+          <div class="feed-item" data-static="true">
             <div class="feed-meta">
               <div class="feed-avatar" style="background:linear-gradient(135deg,var(--blush),var(--rose));"></div>
               <div><div class="feed-author">Equal Ground</div><div class="feed-time">Platform launch · 2026</div></div>
@@ -3494,6 +3559,10 @@ function _showPage(page) {
   if (page === 'articles' && window._loadPublicArticles) {
     window._loadPublicArticles();
   }
+  // ADD THIS:
+if (page === 'community' && window._fbLoadFeed) {
+    window._fbLoadFeed();
+}
 }
 
 function navigate(page) {
@@ -3585,26 +3654,21 @@ function postMicro() {
   const inp = document.getElementById('microInput');
   if (!inp || !inp.value.trim()) { showToast('Write something first.'); return; }
   const text = inp.value.trim();
-  const container = document.getElementById('feedContainer');
-  const item = document.createElement('div');
-  item.className = 'feed-item';
-  item.style.animation = 'fadeIn 0.4s ease';
-  item.innerHTML = `
-    <div class="feed-meta">
-      <div class="feed-avatar" style="background:linear-gradient(135deg,var(--mauve),var(--rose));"></div>
-      <div><div class="feed-author">You</div><div class="feed-time">Just now</div></div>
-      <span class="feed-type-badge badge-micro">thought</span>
-    </div>
-    <p class="feed-text">"${text}"</p>
-    <div class="reactions-row">
-      <button class="reaction-btn" onclick="react(this)">🤍 This stayed with me <span class="reaction-count">0</span></button>
-      <button class="reaction-btn" onclick="react(this)">⊕ This needs to be heard <span class="reaction-count">0</span></button>
-      <button class="bookmark-btn" onclick="window._fbToggleSave('welcome-post', 'Welcome to Equal Ground', this)" title="Save">◻</button>
-    </div>`;
-  container.insertBefore(item, container.firstChild);
-  inp.value = '';
-  updateMicroCount();
-  showToast('Posted ✦');
+
+  // Auth gate — must be logged in to post
+  window._requireAuth(async (user) => {
+    try {
+      const { addDoc, collection, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+      // We can't import here — use the exposed window function instead
+    } catch(e) {}
+
+    // Use the exposed Firebase function
+    if (window._fbPostMicro) {
+      await window._fbPostMicro(text);
+    }
+    inp.value = '';
+    updateMicroCount();
+  });
 }
 
 function setWriteType(btn, type) {
