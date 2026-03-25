@@ -3247,7 +3247,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="write-sidebar-card">
             <div class="write-sidebar-label">Actions</div>
             <div style="display:flex;flex-direction:column;gap:10px;">
-              <button class="btn btn-primary" style="justify-content:center;" oonclick="window._fbSubmitWriting()">Submit for review →</button>
+              <button class="btn btn-primary" style="justify-content:center;" onclick="window._fbSubmitWriting()">Submit for review →</button>
               <button class="btn btn-ghost" style="justify-content:center;font-size:13px;" onclick="showToast('Saved as draft')">Save draft</button>
             </div>
           </div>
@@ -3650,7 +3650,6 @@ function switchProfileTab(el, tab) {
   if (tab === 'saved' && window._fbLoadSavedArticles) window._fbLoadSavedArticles();
   if (tab === 'posts' && window._fbLoadMySubmissions) window._fbLoadMySubmissions();
 }
-```
 
 
 function openShareModal() { document.getElementById('shareModal').classList.add('open'); }
