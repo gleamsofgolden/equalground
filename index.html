@@ -3137,7 +3137,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <button class="reaction-btn" onclick="react(this)">🤍 This stayed with me <span class="reaction-count">0</span></button>
               <button class="reaction-btn" onclick="react(this)">◎ Made me uncomfortable <span class="reaction-count">0</span></button>
               <button class="reaction-btn" onclick="react(this)">⊕ Needs to be heard <span class="reaction-count">0</span></button>
-              <button class="bookmark-btn" onclick="window._fbToggleSave(articleId, articleTitle, this)" title="Save">◻</button>
+              <button class="bookmark-btn" onclick="window._fbToggleSave('demo-post-1', 'Anonymous Thought', this)" title="Save">◻</button>
             </div>
           </div>
           <div class="feed-item">
@@ -3599,7 +3599,7 @@ function postMicro() {
     <div class="reactions-row">
       <button class="reaction-btn" onclick="react(this)">🤍 This stayed with me <span class="reaction-count">0</span></button>
       <button class="reaction-btn" onclick="react(this)">⊕ This needs to be heard <span class="reaction-count">0</span></button>
-      <button class="bookmark-btn" onclick="window._fbToggleSave(articleId, articleTitle, this)">◻</button>
+      <button class="bookmark-btn" onclick="window._fbToggleSave('welcome-post', 'Welcome to Equal Ground', this)" title="Save">◻</button>
     </div>`;
   container.insertBefore(item, container.firstChild);
   inp.value = '';
