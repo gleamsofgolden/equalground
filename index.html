@@ -2333,44 +2333,59 @@ window._fbLoadFeed = function() {
 
   // Real-time listener — updates for ALL users instantly
   const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
-  onSnapshot(q, (snap) => {
-    // Keep the two static seed posts at the bottom, replace dynamic ones
-    const staticPosts = container.querySelectorAll('.feed-item[data-static]');
-    // Remove all non-static posts
-    container.querySelectorAll('.feed-item:not([data-static])').forEach(el => el.remove());
+ onSnapshot(q, (snap) => {
+  snap.docChanges().forEach((change) => {
+    const p = { id: change.doc.id, ...change.doc.data() };
 
-    snap.forEach(d => {
-      const p = { id: d.id, ...d.data() };
-      const date = p.createdAt?.toDate ? p.createdAt.toDate().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'Just now';
-      const item = document.createElement('div');
-      item.className = 'feed-item';
-      item.setAttribute('data-post-id', p.id);
-      item.innerHTML = `
-        <div class="feed-meta">
-          <div class="feed-avatar" style="background:linear-gradient(135deg,var(--mauve),var(--violet));"></div>
-          <div>
-            <div class="feed-author">${p.anonymous ? 'Anonymous' : p.authorName}</div>
-            <div class="feed-time">${date}</div>
-          </div>
-          <span class="feed-type-badge badge-micro">thought</span>
-          ${p.anonymous ? '<span class="feed-anon-badge">Anonymous</span>' : ''}
-        </div>
-        <p class="feed-text">"${p.text}"</p>
-        <div class="reactions-row">
-          <button class="reaction-btn" onclick="react(this)">🤍 This stayed with me <span class="reaction-count">${p.reactions?.stayed || 0}</span></button>
-          <button class="reaction-btn" onclick="react(this)">◎ Made me uncomfortable <span class="reaction-count">${p.reactions?.uncomfortable || 0}</span></button>
-          <button class="reaction-btn" onclick="react(this)">⊕ Needs to be heard <span class="reaction-count">${p.reactions?.heard || 0}</span></button>
-          <button class="bookmark-btn" onclick="window._fbToggleSave('${p.id}', '${p.text.substring(0,30)}', this)">◻</button>
-        </div>`;
-      // Insert before static posts
-      if (container.firstChild) {
-        container.insertBefore(item, container.firstChild);
-      } else {
-        container.appendChild(item);
+    if (change.type === 'removed') {
+      const el = container.querySelector(`[data-post-id="${p.id}"]`);
+      if (el) el.remove();
+      return;
+    }
+
+    if (change.type === 'modified') {
+      const el = container.querySelector(`[data-post-id="${p.id}"]`);
+      if (el) {
+        const btns = el.querySelectorAll('.reaction-btn .reaction-count');
+        const keys = ['stayed','uncomfortable','heard'];
+        btns.forEach((span, i) => {
+          span.textContent = p.reactions?.[keys[i]] || 0;
+        });
       }
-    });
+      return;
+    }
+
+    // 'added' — new post
+    const date = p.createdAt?.toDate ? p.createdAt.toDate().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : 'Just now';
+    const item = document.createElement('div');
+    item.className = 'feed-item';
+    item.setAttribute('data-post-id', p.id);
+    item.innerHTML = `
+      <div class="feed-meta">
+        <div class="feed-avatar" style="background:linear-gradient(135deg,var(--mauve),var(--violet));"></div>
+        <div>
+          <div class="feed-author">${p.anonymous ? 'Anonymous' : p.authorName}</div>
+          <div class="feed-time">${date}</div>
+        </div>
+        <span class="feed-type-badge badge-micro">thought</span>
+        ${p.anonymous ? '<span class="feed-anon-badge">Anonymous</span>' : ''}
+      </div>
+      <p class="feed-text">"${p.text}"</p>
+      <div class="reactions-row">
+        <button class="reaction-btn" onclick="window._fbReactToPost('${p.id}','stayed',this)">🤍 This stayed with me <span class="reaction-count">${p.reactions?.stayed || 0}</span></button>
+        <button class="reaction-btn" onclick="window._fbReactToPost('${p.id}','uncomfortable',this)">◎ Made me uncomfortable <span class="reaction-count">${p.reactions?.uncomfortable || 0}</span></button>
+        <button class="reaction-btn" onclick="window._fbReactToPost('${p.id}','heard',this)">⊕ Needs to be heard <span class="reaction-count">${p.reactions?.heard || 0}</span></button>
+        <button class="bookmark-btn" onclick="window._fbToggleSave('${p.id}','${p.text.substring(0,30)}',this)">◻</button>
+      </div>`;
+
+    const firstStatic = container.querySelector('[data-static]');
+    if (firstStatic) {
+      container.insertBefore(item, firstStatic);
+    } else {
+      container.appendChild(item);
+    }
   });
-};
+});
   
 window._getCurrentUser = () => currentUser;
   // ══════════════════════════════════════════════════════════
@@ -2851,10 +2866,25 @@ document.addEventListener('DOMContentLoaded', () => {
         <h3>Every message<br>is read by a human.</h3>
         <p>We welcome pitches, partnerships, corrections, and conversation. We do not welcome unsolicited press releases.</p>
         <div class="social-links">
-          <div class="social-link"><div class="social-icon">✕</div><div><div class="social-name">Twitter / X</div><div class="social-handle">@equalground</div></div></div>
-          <div class="social-link"><div class="social-icon">📷</div><div><div class="social-name">Instagram</div><div class="social-handle">@equalground.mag</div></div></div>
-          <div class="social-link"><div class="social-icon">💼</div><div><div class="social-name">LinkedIn</div><div class="social-handle">Equal Ground Media</div></div></div>
-          <div class="social-link"><div class="social-icon">📬</div><div><div class="social-name">Newsletter</div><div class="social-handle">Bi-weekly dispatch</div></div></div>
+<div class="social-link">
+  <a href="https://www.youtube.com/@awoman_100" target="_blank" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
+    <div class="social-icon">✕</div>
+    <div>
+      <div class="social-name">YouTube / X</div>
+      <div class="social-handle">@awoman_100</div>
+    </div>
+  </a>
+</div>
+
+<div class="social-link">
+  <a href="https://www.instagram.com/equalground000" target="_blank" style="text-decoration: none; color: inherit; display: flex; align-items: center;">
+    <div class="social-icon">📷</div>
+    <div>
+      <div class="social-name">Instagram</div>
+      <div class="social-handle">@equalground000</div>
+    </div>
+  </a>
+</div>
         </div>
       </div>
       <div class="contact-form-wrap">
