@@ -2326,7 +2326,25 @@ window._fbPostMicro = async function(text) {
     showToast('Posted ✦');
   } catch(e) { showToast('Post failed: ' + e.message); }
 };
-;
+
+window._getCurrentUser = () => currentUser;
+window._getIsAdmin = () => isAdmin;
+
+window._requireAuth = function(callback) {
+  if (currentUser) {
+    callback(currentUser);
+  } else {
+    window._pendingAuthAction = callback;
+    const modal = document.getElementById('authModal');
+    if (modal) modal.classList.add('open');
+  }
+};
+
+window._closeAuthModal = function() {
+  const modal = document.getElementById('authModal');
+  if (modal) modal.classList.remove('open');
+  window._pendingAuthAction = null;
+};
 
 window._fbLoadFeed = function() {
   const container = document.getElementById('feedContainer');
@@ -2388,38 +2406,6 @@ window._fbLoadFeed = function() {
   });
 });
   
-window._getCurrentUser = () => currentUser;
-  // ══════════════════════════════════════════════════════════
-//  AUTH GATE HELPER
-//  Call this before any restricted action
-// ══════════════════════════════════════════════════════════
-window._requireAuth = function(callback) {
-  if (currentUser) {
-    callback(currentUser);
-  } else {
-    // Store the callback to run after login
-    window._pendingAuthAction = callback;
-    // Show login modal instead of navigating away
-    _showAuthModal();
-  }
-};
-
-function _showAuthModal() {
-  const modal = document.getElementById('authModal');
-  if (modal) modal.classList.add('open');
-}
-
-window._closeAuthModal = function() {
-  const modal = document.getElementById('authModal');
-  if (modal) modal.classList.remove('open');
-  window._pendingAuthAction = null;
-};
-
-// After successful sign-in, run the pending action
-// Add this line inside _fbSignIn's try block, AFTER showToast('Welcome back ✦'):
-//   if (window._pendingAuthAction) { window._pendingAuthAction(auth.currentUser); window._pendingAuthAction = null; window._closeAuthModal(); }
-// (See the modified _fbSignIn below)
-
 
 // ══════════════════════════════════════════════════════════
 //  SAVES — persistent, one per user per article
@@ -2639,8 +2625,7 @@ window._fbUpdateSubmission = async function(id, status) {
     window._fbLoadSubmissions();
   } catch(e) { showToast('Error: ' + e.message); }
 };
-window._getIsAdmin = () => isAdmin;
-
+  
 document.addEventListener('DOMContentLoaded', () => {
   const saveBtn = document.querySelector('#ptab-settings .btn-primary');
   if (saveBtn) saveBtn.setAttribute('onclick', 'window._fbSaveProfile()');
@@ -3244,7 +3229,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="reactions-row">
               <button class="reaction-btn" onclick="react(this)">🤍 This stayed with me <span class="reaction-count">12</span></button>
               <button class="reaction-btn" onclick="react(this)">⊕ Needs to be heard <span class="reaction-count">8</span></button>
-              <button class="bookmark-btn" onclick="window._fbToggleSave(articleId, articleTitle, this)" title="Save">◻</button>
+              <button class="bookmark-btn" onclick="window._fbToggleSave('demo-post-2','Welcome to Equal Ground',this)" title="Save">◻</button>
             </div>
           </div>
         </div>
@@ -3682,18 +3667,8 @@ function postMicro() {
   const inp = document.getElementById('microInput');
   if (!inp || !inp.value.trim()) { showToast('Write something first.'); return; }
   const text = inp.value.trim();
-
-  // Auth gate — must be logged in to post
   window._requireAuth(async (user) => {
-    try {
-      const { addDoc, collection, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-      // We can't import here — use the exposed window function instead
-    } catch(e) {}
-
-    // Use the exposed Firebase function
-    if (window._fbPostMicro) {
-      await window._fbPostMicro(text);
-    }
+    if (window._fbPostMicro) await window._fbPostMicro(text);
     inp.value = '';
     updateMicroCount();
   });
