@@ -2636,6 +2636,8 @@ document.addEventListener('DOMContentLoaded', () => {
 if (document.getElementById('page-articles')?.classList.contains('active')) {
     window._loadPublicArticles();
 }
+
+
   
 </script>
 
@@ -3579,17 +3581,16 @@ function _showPage(page) {
 
   if (page === 'articles') {
     if (window._loadPublicArticles) {
-        window._loadPublicArticles();
+      window._loadPublicArticles();
     } else {
-        // Module not ready yet — wait for it
-        const poll = setInterval(() => {
-            if (window._loadPublicArticles) {
-                clearInterval(poll);
-                window._loadPublicArticles();
-            }
-        }, 100);
+      const poll = setInterval(() => {
+        if (window._loadPublicArticles) {
+          clearInterval(poll);
+          window._loadPublicArticles();
+        }
+      }, 100);
     }
-}
+  }
   // ADD THIS:
 if (page === 'community' && window._fbLoadFeed) {
     window._fbLoadFeed();
