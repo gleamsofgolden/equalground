@@ -3506,6 +3506,17 @@ if (document.getElementById('page-articles')?.classList.contains('active')) {
 function openArticle(id) {
   window._openArticleId = id;
   _showPage('article-detail');
+  // Poll until module function is ready
+  if (window._loadArticleDetail) {
+    window._loadArticleDetail(id);
+  } else {
+    const poll = setInterval(() => {
+      if (window._loadArticleDetail) {
+        clearInterval(poll);
+        window._loadArticleDetail(id);
+      }
+    }, 80);
+  }
 }
 // ══════════════════════════════════════════════════════════
 //  ROUTING SYSTEM
@@ -3646,11 +3657,6 @@ function _showPage(page) {
   // ADD THIS:
 if (page === 'community' && window._fbLoadFeed) {
     window._fbLoadFeed();
-}
-  if (page === 'article-detail') {
-    if (window._loadArticleDetail) {
-        window._loadArticleDetail(window._openArticleId);
-    }
 }
 }
 
