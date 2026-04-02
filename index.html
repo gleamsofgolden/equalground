@@ -2631,6 +2631,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveBtn = document.querySelector('#ptab-settings .btn-primary');
   if (saveBtn) saveBtn.setAttribute('onclick', 'window._fbSaveProfile()');
 });
+
+  // Auto-load if articles page is already visible on module init
+if (document.getElementById('page-articles')?.classList.contains('active')) {
+    window._loadPublicArticles();
+}
+  
 </script>
 
 <!-- ═══════════════════════════════════════════ NAVIGATION ═══ -->
@@ -3571,9 +3577,19 @@ function _showPage(page) {
     history.pushState(null, '', page === 'home' ? '/' : '#' + page);
   }
 
-  if (page === 'articles' && window._loadPublicArticles) {
-    window._loadPublicArticles();
-  }
+  if (page === 'articles') {
+    if (window._loadPublicArticles) {
+        window._loadPublicArticles();
+    } else {
+        // Module not ready yet — wait for it
+        const poll = setInterval(() => {
+            if (window._loadPublicArticles) {
+                clearInterval(poll);
+                window._loadPublicArticles();
+            }
+        }, 100);
+    }
+}
   // ADD THIS:
 if (page === 'community' && window._fbLoadFeed) {
     window._fbLoadFeed();
