@@ -2138,6 +2138,34 @@ window._fbSignOut = async function() {
   } catch(e) { showToast('Error signing out.'); }
 };
 
+window._loadArticleDetail = async function(id) {
+  const container = document.getElementById('page-article-detail');
+  if (!container || !id) return;
+  try {
+    const snap = await getDoc(doc(db, 'articles', id));
+    if (!snap.exists()) return;
+    const a = snap.data();
+    const date = a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
+    container.innerHTML = `
+      <div style="padding-top:72px;min-height:100vh;background:linear-gradient(160deg,var(--cream) 0%,#f0e8f5 100%);">
+        <div style="max-width:740px;margin:0 auto;padding:60px 40px 100px;">
+          <button class="back-btn" onclick="navigate('articles')">← Back to Articles</button>
+          <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--violet);margin-bottom:16px;">${a.category || 'General'}</div>
+          <h1 style="font-family:'Playfair Display',serif;font-size:clamp(32px,5vw,52px);font-weight:700;color:var(--deep-violet);line-height:1.1;margin-bottom:20px;">${a.title}</h1>
+          ${a.subtitle ? `<p style="font-family:'Cormorant Garamond',serif;font-size:22px;font-style:italic;color:var(--text-mid);margin-bottom:32px;line-height:1.6;">${a.subtitle}</p>` : ''}
+          <div style="display:flex;align-items:center;gap:16px;padding:24px 0;border-top:1px solid rgba(107,79,138,0.12);border-bottom:1px solid rgba(107,79,138,0.12);margin-bottom:44px;">
+            <div style="width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--violet),var(--rose));display:flex;align-items:center;justify-content:center;color:white;font-size:16px;font-weight:700;flex-shrink:0;">${(a.authorName||'?')[0]}</div>
+            <div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--text-dark);">${a.authorName || 'Equal Ground'}</div>
+              <div style="font-size:12px;color:var(--text-light);">${date}</div>
+            </div>
+          </div>
+          <div style="font-family:'Inter',sans-serif;font-size:17px;line-height:1.85;color:var(--text-mid);">${a.body || ''}</div>
+        </div>
+      </div>`;
+  } catch(e) { console.error('Error loading article:', e); }
+};
+
 // ══════════════════════════════════════════════════════════
 //  ADMIN: ARTICLE MANAGEMENT
 // ══════════════════════════════════════════════════════════
@@ -2291,7 +2319,7 @@ window._loadPublicArticles = async function() {
     
     const cards = articles.map(a => {
       const date = a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
-      return `<div class="article-card" style="background:white;border-radius:20px;border:1px solid var(--card-border);padding:32px;cursor:pointer;margin-bottom:16px;">
+      return `<div class="article-card" style="background:white;border-radius:20px;border:1px solid var(--card-border);padding:32px;cursor:pointer;margin-bottom:16px;" onclick="openArticle('${a.id}')">
         <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--violet);margin-bottom:14px;">${a.category || 'General'}</div>
         <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--deep-violet);margin-bottom:10px;line-height:1.3;">${a.title}</h2>
         ${a.subtitle ? `<p style="font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--text-mid);margin-bottom:18px;line-height:1.6;">${a.subtitle}</p>` : ''}
@@ -3474,6 +3502,11 @@ if (document.getElementById('page-articles')?.classList.contains('active')) {
 <button class="fab-write" id="fabWrite" onclick="navigate('write')" style="display:none;">✦ Write</button>
 
 <script>
+
+function openArticle(id) {
+  window._openArticleId = id;
+  _showPage('article-detail');
+}
 // ══════════════════════════════════════════════════════════
 //  ROUTING SYSTEM
 // ══════════════════════════════════════════════════════════
@@ -3613,6 +3646,11 @@ function _showPage(page) {
   // ADD THIS:
 if (page === 'community' && window._fbLoadFeed) {
     window._fbLoadFeed();
+}
+  if (page === 'article-detail') {
+    if (window._loadArticleDetail) {
+        window._loadArticleDetail(window._openArticleId);
+    }
 }
 }
 
