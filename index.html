@@ -2316,6 +2316,54 @@ window._loadPublicArticles = async function() {
       container.innerHTML = `<div style="padding:80px 40px;border-radius:24px;border:1.5px dashed rgba(107,79,138,0.18);background:linear-gradient(135deg,rgba(232,218,240,0.3),rgba(245,224,232,0.2));text-align:center;"><div style="font-size:36px;margin-bottom:16px;opacity:0.3;">◎</div><p style="font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--deep-violet);margin-bottom:10px;">The archive is empty for now</p><p style="font-family:'Cormorant Garamond',serif;font-size:17px;font-style:italic;color:var(--text-light);max-width:500px;margin:0 auto 32px;line-height:1.65;">Equal Ground launched in 2026. Our writers are at work.</p><button class="btn btn-primary" style="margin-top:24px;" onclick="navigate('signup')">Join to be notified →</button></div>`;
       return;
     }
+
+    window._loadHomeArticles = async function() {
+  const container = document.getElementById('homeFeaturedArticles');
+  if (!container) return;
+  
+  try {
+    const snap = await getDocs(collection(db, 'articles'));
+    const articles = [];
+    snap.forEach(d => {
+      const data = d.data();
+      if (data.status === 'published') articles.push({ id: d.id, ...data });
+    });
+    
+    articles.sort((a, b) => (b.createdAt?.toDate?.() || 0) - (a.createdAt?.toDate?.() || 0));
+    const featured = articles.slice(0, 3); // Show 3 featured articles
+    
+    if (featured.length === 0) {
+      container.innerHTML = `<div style="margin-top:52px;padding:80px 40px;border-radius:24px;border:1.5px dashed rgba(107,79,138,0.18);background:linear-gradient(135deg,rgba(232,218,240,0.3),rgba(245,224,232,0.2));text-align:center;">
+        <div style="font-size:40px;margin-bottom:20px;opacity:0.4;">⊜</div>
+        <p style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--deep-violet);margin-bottom:12px;">No articles published yet</p>
+        <p style="font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--text-light);max-width:440px;margin:0 auto 28px;">The first stories are being prepared. Check back soon — or <span style="color:var(--violet);cursor:pointer;" onclick="navigate('signup')">join the community</span> to be notified when we go live.</p>
+      </div>`;
+      return;
+    }
+
+    const cards = featured.map(a => {
+      const date = a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
+      return `<div class="article-card" style="cursor:pointer;" onclick="openArticle('${a.id}')">
+        <div class="card-img" style="background:linear-gradient(135deg,var(--lavender),var(--violet));"></div>
+        <div class="card-body">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--violet);margin-bottom:10px;">${a.category || 'General'}</div>
+          <h3 class="card-title">${a.title}</h3>
+          ${a.subtitle ? `<p class="card-excerpt">${a.subtitle}</p>` : ''}
+          <div class="card-meta">
+            <span class="author">${a.authorName || 'Equal Ground'}</span>
+            <span class="sep">·</span>
+            <span>${date}</span>
+          </div>
+        </div>
+      </div>`;
+    });
+
+    container.innerHTML = `<div class="articles-grid" style="margin-top:52px;">${cards.join('')}</div>`;
+  } catch(e) {
+    console.error('Error loading featured articles:', e);
+    container.innerHTML = `<div style="padding:40px;color:#c96464;">Error loading articles</div>`;
+  }
+};
     
     const cards = articles.map(a => {
       const date = a.createdAt?.toDate ? a.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}) : '';
@@ -2683,7 +2731,19 @@ document.addEventListener('DOMContentLoaded', () => {
 if (document.getElementById('page-articles')?.classList.contains('active')) {
     window._loadPublicArticles();
 }
-
+// Load home featured articles
+if (document.getElementById('page-home')?.classList.contains('active')) {
+    if (window._loadHomeArticles) {
+        window._loadHomeArticles();
+    } else {
+        const poll = setInterval(() => {
+            if (window._loadHomeArticles) {
+                clearInterval(poll);
+                window._loadHomeArticles();
+            }
+        }, 100);
+    }
+}
 
   
 </script>
@@ -2727,17 +2787,12 @@ if (document.getElementById('page-articles')?.classList.contains('active')) {
   </section>
 
   <section class="section" style="background: white;">
-    <div class="container">
-      <p class="section-eyebrow">Featured This Week</p>
-      <h2 class="section-title">Stories that <em>challenge</em> the frame</h2>
-      <div style="margin-top:52px;padding:80px 40px;border-radius:24px;border:1.5px dashed rgba(107,79,138,0.18);background:linear-gradient(135deg,rgba(232,218,240,0.3),rgba(245,224,232,0.2));text-align:center;">
-        <div style="font-size:40px;margin-bottom:20px;opacity:0.4;">⊜</div>
-        <p style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--deep-violet);margin-bottom:12px;">No articles published yet</p>
-        <p style="font-family:'Cormorant Garamond',serif;font-size:18px;font-style:italic;color:var(--text-light);max-width:440px;margin:0 auto 28px;">The first stories are being prepared. Check back soon — or <span style="color:var(--violet);cursor:pointer;" onclick="navigate('signup')">join the community</span> to be notified when we go live.</p>
-      </div>
-    </div>
-  </section>
-
+ <div id="homeFeaturedArticles">
+  <div style="margin-top:52px;padding:80px 40px;border-radius:24px;border:1.5px dashed rgba(107,79,138,0.18);background:linear-gradient(135deg,rgba(232,218,240,0.3),rgba(245,224,232,0.2));text-align:center;">
+    <div style="font-size:40px;margin-bottom:20px;opacity:0.4;">⊜</div>
+    <p style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--deep-violet);margin-bottom:12px;">Loading articles…</p>
+  </div>
+</div>
   <div class="mission-strip">
     <p class="mission-quote">"Feminism is not a single story. It is the insistence that every story deserves to be told — with all its complexity, contradiction, and power."</p>
     <p class="mission-sub">Equal Ground · Est. 2026 · Global</p>
@@ -3659,7 +3714,20 @@ function _showPage(page) {
       }, 100);
     }
   }
+  if (page === 'home') {
+    if (window._loadHomeArticles) {
+        window._loadHomeArticles();
+    } else {
+        const poll = setInterval(() => {
+            if (window._loadHomeArticles) {
+                clearInterval(poll);
+                window._loadHomeArticles();
+            }
+        }, 100);
+    }
+}
   // ADD THIS:
+  
 if (page === 'community' && window._fbLoadFeed) {
     window._fbLoadFeed();
 }
