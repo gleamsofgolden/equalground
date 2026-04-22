@@ -2185,8 +2185,7 @@ window._fbPublishArticle = async function(status = 'published') {
     await addDoc(collection(db, 'articles'), {
       title, subtitle: subtitle || '', body: body || '', category, status,
       authorId: currentUser.uid,
-      authorName: currentUserData?.displayName || currentUser.displayName || currentUser.email,
-      createdAt: serverTimestamp(),
+authorName: (document.getElementById('adminAuthorName')?.value.trim() || currentUserData?.displayName || currentUser.displayName || currentUser.email),      createdAt: serverTimestamp(),
       views: 0,
     });
     showToast(status === 'published' ? 'Article published ✦' : 'Saved as draft');
@@ -3117,6 +3116,11 @@ if (document.getElementById('page-articles')?.classList.contains('active')) {
                   </select>
                 </div>
                 <div class="panel-section">
+  <div class="panel-label">Author Name</div>
+  <input class="panel-select" id="adminAuthorName" type="text" placeholder="Enter author name (optional)" style="padding:10px 14px;border:1px solid rgba(107,79,138,0.15);border-radius:10px;font-family:'Inter',sans-serif;font-size:14px;background:white;color:var(--text-dark);outline:none;">
+  <div style="font-size:11px;color:var(--text-light);margin-top:6px;">Leave blank to use your account name</div>
+</div>
+                <div class="panel-section">
                   <div class="panel-label">Cover Image</div>
                   <div class="upload-area"><div class="upload-icon">⊕</div><div class="upload-text">Click to upload<br><span style="font-size:11px;opacity:0.6;">PNG, JPG up to 8MB</span></div></div>
                 </div>
@@ -3672,8 +3676,7 @@ function switchPanel(panel, el) {
   if (target) target.classList.add('active');
   document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
   if (el) el.classList.add('active');
-  const titles = { dashboard:'Dashboard', create:'Create Article', 'all-articles':'All Articles', drafts:'Drafts', users:'Users', settings:'Settings' };
-  document.getElementById('adminPanelTitle').textContent = titles[panel] || 'Admin';
+const titles = { dashboard:'Dashboard', create:'Create Article', 'all-articles':'All Articles', drafts:'Drafts', submissions:'Submissions', users:'Users', settings:'Settings' };  document.getElementById('adminPanelTitle').textContent = titles[panel] || 'Admin';
   if (panel === 'all-articles' || panel === 'drafts') { if (window._loadAdminArticles) window._loadAdminArticles(); }
   if (panel === 'users') { if (window._loadAdminUsers) window._loadAdminUsers(); }
   if (panel === 'dashboard') { if (window._loadAdminStats) window._loadAdminStats(); if (window._loadAdminArticles) window._loadAdminArticles(); }
